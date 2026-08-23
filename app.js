@@ -1055,6 +1055,19 @@ function createNodeCard(
             </p>
 
             ${
+                node.upland_location
+                    ? `
+                        <p class="node-upland-location">
+                            Upland:
+                            ${escapeHTML(
+                                node.upland_location
+                            )}
+                        </p>
+                    `
+                    : ""
+            }
+
+            ${
                 node.description
                     ? `
                         <p class="node-description">
@@ -1246,6 +1259,8 @@ function filterNodes() {
                     node.city,
 
                     node.country,
+
+                    node.upland_location,
 
                     node.description
 
@@ -1484,6 +1499,21 @@ function createDashboard() {
                         required
                         placeholder="Country"
                     >
+
+
+                    <label for="node-upland-location">
+                        Upland Location
+                    </label>
+
+                    <input
+                        type="text"
+                        id="node-upland-location"
+                        placeholder="Example: Chicago, Illinois"
+                    >
+
+                    <small>
+                        Enter the location or city used by your Node in Upland.
+                    </small>
 
 
                     <label for="node-continent">
@@ -1833,6 +1863,21 @@ async function loadMyNodes() {
                                         )}
                                     </p>
 
+                                    ${
+                                        node.upland_location
+                                            ? `
+                                                <p>
+                                                    Upland Location:
+                                                    <strong>
+                                                        ${escapeHTML(
+                                                            node.upland_location
+                                                        )}
+                                                    </strong>
+                                                </p>
+                                            `
+                                            : ""
+                                    }
+
                                     <p>
                                         Status:
                                         <strong>
@@ -2062,6 +2107,9 @@ async function submitNode() {
     const country =
         getValue("node-country");
 
+    const uplandLocation =
+        getValue("node-upland-location");
+
     const continent =
         getValue("node-continent");
 
@@ -2225,6 +2273,9 @@ async function submitNode() {
             city,
 
             country,
+
+            upland_location:
+                uplandLocation || null,
 
             continent,
 

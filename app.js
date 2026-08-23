@@ -1,58 +1,37 @@
-/* =========================================
-   NODE HUB
-   V1.0 APPLICATION
-========================================= */
+// =============================================
+// NODE HUB
+// Supabase + Frontend
+// =============================================
 
-"use strict";
+const SUPABASE_URL =
+    "https://ynqtzyzxspoxssjrjeve.supabase.co";
 
-
-/* =========================================
-   DEMO NODE DATA
-=========================================
-
-   These are temporary demonstration records.
-
-   IMPORTANT:
-   They are NOT official Upland Nodes.
-
-   Real Nodes will eventually come from the
-   Node Hub database after administrator approval.
-========================================= */
-
-const demoNodes = [
-    {
-        id: 1,
-        name: "Example Node",
-        city: "Chicago",
-        country: "United States",
-        continent: "North America",
-        neighborhood: "Coming Soon",
-        leader: "Node Administrator",
-        verified: false,
-        discord: "",
-        telegram: "",
-        twitter: "",
-        instagram: "",
-        youtube: "",
-        logo: ""
-    }
-];
+const SUPABASE_KEY =
+    "sb_publishable_FoDbr9qgVeeIYfzEZNNN9Q_53aHxI2g";
 
 
-/* =========================================
-   APPLICATION STATE
-========================================= */
+// =============================================
+// SUPABASE CLIENT
+// =============================================
 
-const state = {
-    language: "en-US",
-    search: "",
-    continent: ""
-};
+const { createClient } = supabase;
+
+const db = createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY
+);
 
 
-/* =========================================
-   DOM ELEMENTS
-========================================= */
+// =============================================
+// STATE
+// =============================================
+
+let nodes = [];
+
+
+// =============================================
+// DOM
+// =============================================
 
 const nodeGrid =
     document.getElementById("node-grid");
@@ -60,139 +39,486 @@ const nodeGrid =
 const nodeCount =
     document.getElementById("node-count");
 
-const nodeSearch =
+const searchInput =
     document.getElementById("node-search");
 
 const continentFilter =
     document.getElementById("continent-filter");
 
-const languageSelector =
-    document.getElementById("language-selector");
+
+// =============================================
+// INITIALIZE
+// =============================================
+
+document.addEventListener(
+    "DOMContentLoaded",
+    async () => {
+
+        await loadNodes();
+
+        setupSearch();
+
+        setupLanguage();
+
+    }
+);
 
 
-/* =========================================
-   TRANSLATIONS
-========================================= */
+// =============================================
+// LOAD NODES
+// =============================================
 
-const translations = {
+async function loadNodes() {
 
-    "en-US": {
+    try {
 
-        nodes: "Nodes",
-
-        noNodes: "No Nodes listed yet",
-
-        noNodesDescription:
-            "Be one of the first Node administrators to register your Node.",
-
-        submitNode:
-            "Submit a Node",
-
-        searchPlaceholder:
-            "Search Node, city or country",
-
-        allContinents:
-            "All continents",
-
-        verified:
-            "Verified",
-
-        pending:
-            "Pending",
-
-        location:
-            "Location",
-
-        leader:
-            "Leader",
-
-        visitDiscord:
-            "Visit Discord",
-
-        viewNode:
-            "View Node",
-
-        demoNotice:
-            "Demo Node"
-
-    },
+        const {
+            data,
+            error
+        } = await db
+            .from("nodes")
+            .select("*")
+            .eq("status", "approved")
+            .order("created_at", {
+                ascending: false
+            });
 
 
-    "pt-BR": {
+        if (error) {
 
-        nodes: "Nodes",
+            console.error(
+                "Error loading Nodes:",
+                error
+            );
 
-        noNodes:
-            "Nenhum Node cadastrado ainda",
+            showEmptyDirectory();
 
-        noNodesDescription:
-            "Seja um dos primeiros administradores a cadastrar seu Node.",
+            return;
 
-        submitNode:
-            "Cadastrar um Node",
+        }
 
-        searchPlaceholder:
-            "Pesquisar Node, cidade ou país",
 
-        allContinents:
-            "Todos os continentes",
+        nodes = data || [];
 
-        verified:
-            "Verificado",
-
-        pending:
-            "Pendente",
-
-        location:
-            "Localização",
-
-        leader:
-            "Líder",
-
-        visitDiscord:
-            "Visitar Discord",
-
-        viewNode:
-            "Ver Node",
-
-        demoNotice:
-            "Node de demonstração"
+        renderNodes(nodes);
 
     }
 
-};
+    catch (error) {
 
+        console.error(
+            "Unexpected error:",
+            error
+        );
 
-/* =========================================
-   GET TRANSLATION
-========================================= */
+        showEmptyDirectory();
 
-function t(key) {
+    }
 
-    const language =
-        translations[state.language]
-        || translations["en-US"];
-
-    return language[key]
-        || translations["en-US"][key]
-        || key;
 }
 
 
-/* =========================================
-   ESCAPE HTML
-=========================================
+// =============================================
+// RENDER NODES
+// =============================================
 
-   Prevents user-provided information from
-   being interpreted as HTML when Nodes are
-   eventually loaded from the database.
-========================================= */
+function renderNodes(list) {
+
+    nodeGrid.innerHTML = "";
+
+
+    nodeCount.textContent =
+        `${list.length} ${list.length === 1 ? "Node" : "Nodes"}`;
+
+
+    if (!list.length) {
+
+        showEmptyDirectory();
+
+        return;
+
+    }
+
+
+    list.forEach(node => {
+
+        const card =
+            createNodeCard(node);
+
+        nodeGrid.appendChild(card);
+
+    });
+
+}
+
+
+// =============================================
+// NODE CARD
+// =============================================
+
+function createNodeCard(node) {
+
+    const article =
+        document.createElement("article");
+
+
+    article.className =
+        "node-card";
+
+
+    const logo =
+        node.logo_url ||
+        "";
+
+
+    const imageHTML = logo
+
+        ? `
+            <div class="node-card-image">
+
+                <img
+                    src="${escapeHTML(logo)}"
+                    alt="${escapeHTML(node.name || "Node")}"
+                    loading="lazy"
+                >
+
+            </div>
+        `
+
+        : `
+            <div class="node-card-image node-card-placeholder">
+                ●
+            </div>
+        `;
+
+
+    article.innerHTML = `
+
+        ${imageHTML}
+
+
+        <div class="node-card-content">
+
+            <h3>
+                ${escapeHTML(
+                    node.name || "Unnamed Node"
+                )}
+            </h3>
+
+
+            <p class="node-location">
+
+                ${escapeHTML(
+                    node.city || ""
+                )}
+
+                ${
+                    node.country
+                        ? `, ${escapeHTML(node.country)}`
+                        : ""
+                }
+
+            </p>
+
+
+            ${
+                node.description
+
+                    ? `
+                        <p class="node-description">
+
+                            ${escapeHTML(
+                                node.description
+                            )}
+
+                        </p>
+                    `
+
+                    : ""
+            }
+
+
+            <div class="node-links">
+
+                ${
+                    node.discord_url
+
+                        ? `
+                            <a
+                                href="${safeURL(node.discord_url)}"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                Discord
+                            </a>
+                        `
+
+                        : ""
+                }
+
+
+                ${
+                    node.telegram_url
+
+                        ? `
+                            <a
+                                href="${safeURL(node.telegram_url)}"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                Telegram
+                            </a>
+                        `
+
+                        : ""
+                }
+
+
+                ${
+                    node.twitter_url
+
+                        ? `
+                            <a
+                                href="${safeURL(node.twitter_url)}"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                X / Twitter
+                            </a>
+                        `
+
+                        : ""
+                }
+
+            </div>
+
+
+            <div class="node-card-footer">
+
+                <span class="verified-badge">
+                    Verified Node
+                </span>
+
+            </div>
+
+        </div>
+
+    `;
+
+
+    return article;
+
+}
+
+
+// =============================================
+// EMPTY DIRECTORY
+// =============================================
+
+function showEmptyDirectory() {
+
+    nodeGrid.innerHTML = `
+
+        <div class="empty-directory">
+
+            <div class="empty-icon">
+                ◉
+            </div>
+
+
+            <h3>
+                No Nodes listed yet
+            </h3>
+
+
+            <p>
+                Be one of the first Node
+                administrators to register
+                your Node.
+            </p>
+
+
+            <a
+                href="#submit"
+                class="button button-primary"
+            >
+                Submit a Node
+            </a>
+
+        </div>
+
+    `;
+
+
+    nodeCount.textContent =
+        "0 Nodes";
+
+}
+
+
+// =============================================
+// SEARCH
+// =============================================
+
+function setupSearch() {
+
+    if (!searchInput) {
+        return;
+    }
+
+
+    searchInput.addEventListener(
+        "input",
+        filterNodes
+    );
+
+
+    if (continentFilter) {
+
+        continentFilter.addEventListener(
+            "change",
+            filterNodes
+        );
+
+    }
+
+}
+
+
+// =============================================
+// FILTER
+// =============================================
+
+function filterNodes() {
+
+    const search =
+        searchInput
+            ? searchInput.value
+                .trim()
+                .toLowerCase()
+            : "";
+
+
+    const continent =
+        continentFilter
+            ? continentFilter.value
+            : "";
+
+
+    const filtered =
+        nodes.filter(node => {
+
+            const text = [
+
+                node.name,
+
+                node.city,
+
+                node.country,
+
+                node.description
+
+            ]
+                .filter(Boolean)
+                .join(" ")
+                .toLowerCase();
+
+
+            const matchesSearch =
+                !search ||
+                text.includes(search);
+
+
+            const matchesContinent =
+                !continent ||
+                node.continent === continent;
+
+
+            return (
+                matchesSearch &&
+                matchesContinent
+            );
+
+        });
+
+
+    renderNodes(filtered);
+
+}
+
+
+// =============================================
+// LANGUAGE
+// =============================================
+
+function setupLanguage() {
+
+    const selector =
+        document.getElementById(
+            "language-selector"
+        );
+
+
+    if (!selector) {
+        return;
+    }
+
+
+    selector.addEventListener(
+        "change",
+        () => {
+
+            const language =
+                selector.value;
+
+
+            localStorage.setItem(
+                "nodehub-language",
+                language
+            );
+
+
+            if (language === "pt-BR") {
+
+                alert(
+                    "Português (BR) será ativado na próxima etapa do projeto."
+                );
+
+            }
+
+        }
+    );
+
+
+    const savedLanguage =
+        localStorage.getItem(
+            "nodehub-language"
+        );
+
+
+    if (savedLanguage) {
+
+        selector.value =
+            savedLanguage;
+
+    }
+
+}
+
+
+// =============================================
+// SECURITY HELPERS
+// =============================================
 
 function escapeHTML(value) {
 
-    if (value === null || value === undefined) {
+    if (value === null ||
+        value === undefined) {
+
         return "";
+
     }
+
 
     return String(value)
         .replaceAll("&", "&amp;")
@@ -200,422 +526,45 @@ function escapeHTML(value) {
         .replaceAll(">", "&gt;")
         .replaceAll('"', "&quot;")
         .replaceAll("'", "&#039;");
-}
-
-
-/* =========================================
-   FILTER NODES
-========================================= */
-
-function getFilteredNodes() {
-
-    const search =
-        state.search
-            .trim()
-            .toLowerCase();
-
-    return demoNodes.filter(node => {
-
-        const matchesSearch =
-            !search
-            ||
-            node.name
-                .toLowerCase()
-                .includes(search)
-            ||
-            node.city
-                .toLowerCase()
-                .includes(search)
-            ||
-            node.country
-                .toLowerCase()
-                .includes(search)
-            ||
-            node.neighborhood
-                .toLowerCase()
-                .includes(search);
-
-
-        const matchesContinent =
-            !state.continent
-            ||
-            node.continent ===
-            state.continent;
-
-
-        return (
-            matchesSearch &&
-            matchesContinent
-        );
-
-    });
 
 }
 
 
-/* =========================================
-   RENDER NODE
-========================================= */
+// =============================================
+// URL VALIDATION
+// =============================================
 
-function renderNode(node) {
+function safeURL(url) {
 
-    const verifiedBadge =
-        node.verified
-            ? `
-                <span class="node-badge verified">
-                    ✓ ${t("verified")}
-                </span>
-            `
-            : `
-                <span class="node-badge pending">
-                    ${t("pending")}
-                </span>
-            `;
+    try {
 
+        const parsed =
+            new URL(url);
 
-    const logo =
-        node.logo
-            ? `
-                <img
-                    src="${escapeHTML(node.logo)}"
-                    alt="${escapeHTML(node.name)} logo"
-                    class="node-logo-image"
-                >
-            `
-            : `
-                <div class="node-logo-placeholder">
-                    ●
-                </div>
-            `;
 
+        if (
+            parsed.protocol === "https:" ||
+            parsed.protocol === "http:"
+        ) {
 
-    const discordButton =
-        node.discord
-            ? `
-                <a
-                    href="${escapeHTML(node.discord)}"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="node-link"
-                >
-                    ${t("visitDiscord")}
-                </a>
-            `
-            : "";
-
-
-    return `
-
-        <article class="node-card">
-
-            <div class="node-card-header">
-
-                ${logo}
-
-                <div class="node-card-title">
-
-                    <h3>
-                        ${escapeHTML(node.name)}
-                    </h3>
-
-                    ${verifiedBadge}
-
-                </div>
-
-            </div>
-
-
-            <div class="node-card-info">
-
-                <div>
-
-                    <small>
-                        ${t("location")}
-                    </small>
-
-                    <strong>
-                        ${escapeHTML(node.city)},
-                        ${escapeHTML(node.country)}
-                    </strong>
-
-                </div>
-
-
-                <div>
-
-                    <small>
-                        ${t("leader")}
-                    </small>
-
-                    <strong>
-                        ${escapeHTML(node.leader)}
-                    </strong>
-
-                </div>
-
-            </div>
-
-
-            <div class="node-card-footer">
-
-                ${discordButton}
-
-                <button
-                    type="button"
-                    class="node-link node-view-button"
-                    data-node-id="${node.id}"
-                >
-                    ${t("viewNode")}
-                </button>
-
-            </div>
-
-        </article>
-
-    `;
-
-}
-
-
-/* =========================================
-   RENDER DIRECTORY
-========================================= */
-
-function renderNodes() {
-
-    if (!nodeGrid) {
-        return;
-    }
-
-
-    const filteredNodes =
-        getFilteredNodes();
-
-
-    if (nodeCount) {
-
-        nodeCount.textContent =
-            `${filteredNodes.length} ${t("nodes")}`;
-
-    }
-
-
-    if (!filteredNodes.length) {
-
-        nodeGrid.innerHTML = `
-
-            <div class="empty-directory">
-
-                <div class="empty-icon">
-                    ◉
-                </div>
-
-                <h3>
-                    ${t("noNodes")}
-                </h3>
-
-                <p>
-                    ${t("noNodesDescription")}
-                </p>
-
-                <a
-                    href="#submit"
-                    class="button button-primary"
-                >
-                    ${t("submitNode")}
-                </a>
-
-            </div>
-
-        `;
-
-        return;
-
-    }
-
-
-    nodeGrid.innerHTML =
-        filteredNodes
-            .map(renderNode)
-            .join("");
-
-
-    attachNodeButtons();
-
-}
-
-
-/* =========================================
-   NODE BUTTONS
-========================================= */
-
-function attachNodeButtons() {
-
-    const buttons =
-        document.querySelectorAll(
-            ".node-view-button"
-        );
-
-
-    buttons.forEach(button => {
-
-        button.addEventListener(
-            "click",
-            () => {
-
-                const nodeId =
-                    Number(
-                        button.dataset.nodeId
-                    );
-
-                const node =
-                    demoNodes.find(
-                        item =>
-                            item.id === nodeId
-                    );
-
-
-                if (!node) {
-                    return;
-                }
-
-
-                alert(
-                    `${node.name}\n\n` +
-                    `${t("location")}: ` +
-                    `${node.city}, ${node.country}\n` +
-                    `${t("leader")}: ` +
-                    `${node.leader}\n\n` +
-                    `${t("demoNotice")}`
-                );
-
-            }
-        );
-
-    });
-
-}
-
-
-/* =========================================
-   SEARCH
-========================================= */
-
-if (nodeSearch) {
-
-    nodeSearch.addEventListener(
-        "input",
-        event => {
-
-            state.search =
-                event.target.value;
-
-            renderNodes();
-
-        }
-    );
-
-}
-
-
-/* =========================================
-   CONTINENT FILTER
-========================================= */
-
-if (continentFilter) {
-
-    continentFilter.addEventListener(
-        "change",
-        event => {
-
-            state.continent =
-                event.target.value;
-
-            renderNodes();
-
-        }
-    );
-
-}
-
-
-/* =========================================
-   LANGUAGE
-========================================= */
-
-if (languageSelector) {
-
-    languageSelector.addEventListener(
-        "change",
-        event => {
-
-            state.language =
-                event.target.value;
-
-            updateInterface();
-
-        }
-    );
-
-}
-
-
-/* =========================================
-   UPDATE INTERFACE
-========================================= */
-
-function updateInterface() {
-
-    if (nodeSearch) {
-
-        nodeSearch.placeholder =
-            t("searchPlaceholder");
-
-    }
-
-
-    if (continentFilter) {
-
-        const firstOption =
-            continentFilter.querySelector(
-                "option:first-child"
+            return escapeHTML(
+                parsed.href
             );
 
-        if (firstOption) {
-
-            firstOption.textContent =
-                t("allContinents");
-
         }
 
     }
 
+    catch (error) {
 
-    renderNodes();
+        console.warn(
+            "Invalid URL:",
+            url
+        );
 
-}
+    }
 
 
-/* =========================================
-   INITIALIZE
-========================================= */
-
-function initializeNodeHub() {
-
-    state.language =
-        languageSelector?.value
-        || "en-US";
-
-    renderNodes();
+    return "#";
 
 }
-
-
-/* =========================================
-   START APPLICATION
-========================================= */
-
-document.addEventListener(
-    "DOMContentLoaded",
-    initializeNodeHub
-);

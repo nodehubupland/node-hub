@@ -1,0 +1,1015 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <meta
+        name="description"
+        content="Node Hub is a community directory for Upland Nodes around the world."
+    >
+
+    <meta
+        name="theme-color"
+        content="#111111"
+    >
+
+    <title>Node Hub | Upland Nodes Directory</title>
+
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+    <!-- =========================================
+         HEADER
+    ========================================== -->
+
+    <header class="site-header">
+
+        <div class="header-container">
+
+            <a
+                href="#home"
+                class="logo"
+                aria-label="Node Hub Home"
+            >
+                <span class="logo-mark">●</span>
+                <span class="logo-text">NODE HUB</span>
+            </a>
+
+            <nav
+                class="main-navigation"
+                aria-label="Main navigation"
+            >
+
+                <a href="#nodes">
+                    Nodes
+                </a>
+
+                <a href="#map">
+                    Map
+                </a>
+
+                <a href="#about">
+                    About
+                </a>
+
+                <a href="#support">
+                    Support
+                </a>
+
+                <a
+                    href="#login"
+                    class="nav-login"
+                >
+                    Sign in
+                </a>
+
+                <select
+                    id="language-selector"
+                    aria-label="Select language"
+                >
+                    <option value="en-US">
+                        English (US)
+                    </option>
+
+                    <option value="pt-BR">
+                        Português (BR)
+                    </option>
+                </select>
+
+            </nav>
+
+        </div>
+
+    </header>
+
+
+    <!-- =========================================
+         MAIN
+    ========================================== -->
+
+    <main>
+
+
+        <!-- =====================================
+             HERO
+        ====================================== -->
+
+        <section
+            id="home"
+            class="hero-section"
+        >
+
+            <div class="hero-container">
+
+                <div class="hero-content">
+
+                    <span class="eyebrow">
+                        UPLAND COMMUNITY DIRECTORY
+                    </span>
+
+                    <h1>
+                        Discover Upland Nodes Around the World
+                    </h1>
+
+                    <p class="hero-description">
+                        Find Nodes, connect with communities,
+                        discover their locations, and explore
+                        the people building Upland communities
+                        around the world.
+                    </p>
+
+                    <div class="hero-buttons">
+
+                        <a
+                            href="#nodes"
+                            class="button button-primary"
+                        >
+                            Explore Nodes
+                        </a>
+
+                        <a
+                            href="#submit"
+                            class="button button-secondary"
+                        >
+                            Submit a Node
+                        </a>
+
+                    </div>
+
+                </div>
+
+
+                <!-- Visual element -->
+
+                <div
+                    class="hero-visual"
+                    aria-hidden="true"
+                >
+
+                    <div class="orbit orbit-one"></div>
+                    <div class="orbit orbit-two"></div>
+                    <div class="orbit orbit-three"></div>
+
+                    <div class="map-point point-one"></div>
+                    <div class="map-point point-two"></div>
+                    <div class="map-point point-three"></div>
+                    <div class="map-point point-four"></div>
+                    <div class="map-point point-five"></div>
+
+                    <div class="hero-node-card">
+
+                        <div class="hero-node-icon">
+                            ●
+                        </div>
+
+                        <strong>
+                            Node Hub
+                        </strong>
+
+                        <span>
+                            Discover. Connect. Explore.
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+
+        <!-- =====================================
+             NODE DIRECTORY
+        ====================================== -->
+
+        <section
+            id="nodes"
+            class="section"
+        >
+
+            <div class="section-header">
+
+                <div>
+
+                    <span class="eyebrow">
+                        DIRECTORY
+                    </span>
+
+                    <h2>
+                        Explore Nodes
+                    </h2>
+
+                    <p>
+                        Discover Nodes and their communities
+                        around the world.
+                    </p>
+
+                </div>
+
+                <div
+                    id="node-count"
+                    class="node-count"
+                >
+                    0 Nodes
+                </div>
+
+            </div>
+
+
+            <!-- Search -->
+
+            <div class="directory-filters">
+
+                <div class="filter-field">
+
+                    <label for="node-search">
+                        Search
+                    </label>
+
+                    <input
+                        id="node-search"
+                        type="search"
+                        placeholder="Search Node, city or country"
+                    >
+
+                </div>
+
+
+                <div class="filter-field">
+
+                    <label for="continent-filter">
+                        Continent
+                    </label>
+
+                    <select id="continent-filter">
+
+                        <option value="">
+                            All continents
+                        </option>
+
+                        <option value="North America">
+                            North America
+                        </option>
+
+                        <option value="South America">
+                            South America
+                        </option>
+
+                        <option value="Europe">
+                            Europe
+                        </option>
+
+                        <option value="Asia">
+                            Asia
+                        </option>
+
+                        <option value="Africa">
+                            Africa
+                        </option>
+
+                        <option value="Oceania">
+                            Oceania
+                        </option>
+
+                    </select>
+
+                </div>
+
+            </div>
+
+
+            <!-- Nodes -->
+
+            <div
+                id="node-grid"
+                class="node-grid"
+            >
+
+                <!--
+                    Nodes will be loaded here
+                    from the database in a future version.
+                -->
+
+                <div class="empty-directory">
+
+                    <div class="empty-icon">
+                        ◉
+                    </div>
+
+                    <h3>
+                        No Nodes listed yet
+                    </h3>
+
+                    <p>
+                        Be one of the first Node administrators
+                        to register your Node.
+                    </p>
+
+                    <a
+                        href="#submit"
+                        class="button button-primary"
+                    >
+                        Submit a Node
+                    </a>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+
+        <!-- =====================================
+             MAP
+        ====================================== -->
+
+        <section
+            id="map"
+            class="section map-section"
+        >
+
+            <div class="section-header">
+
+                <div>
+
+                    <span class="eyebrow">
+                        WORLD MAP
+                    </span>
+
+                    <h2>
+                        Find Nodes Across Upland
+                    </h2>
+
+                    <p>
+                        Explore Node locations around the world.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="world-map">
+
+                <div class="map-grid"></div>
+
+                <div class="map-marker marker-chicago">
+                    ●
+                    <span>Chicago</span>
+                </div>
+
+                <div class="map-marker marker-london">
+                    ●
+                    <span>London</span>
+                </div>
+
+                <div class="map-marker marker-saopaulo">
+                    ●
+                    <span>São Paulo</span>
+                </div>
+
+                <div class="map-marker marker-tokyo">
+                    ●
+                    <span>Tokyo</span>
+                </div>
+
+                <div class="map-marker marker-sanfrancisco">
+                    ●
+                    <span>San Francisco</span>
+                </div>
+
+
+                <div class="map-coming-soon">
+
+                    Interactive Node map coming soon.
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+
+        <!-- =====================================
+             SUBMIT NODE
+        ====================================== -->
+
+        <section
+            id="submit"
+            class="section submit-section"
+        >
+
+            <div class="submit-card">
+
+                <div class="submit-content">
+
+                    <span class="eyebrow">
+                        GROW THE DIRECTORY
+                    </span>
+
+                    <h2>
+                        Have a Node?
+                    </h2>
+
+                    <p>
+                        Register your Node for free.
+                        Your submission will be reviewed
+                        by the Node Hub team before appearing
+                        in the public directory.
+                    </p>
+
+                </div>
+
+                <div class="submit-action">
+
+                    <a
+                        href="#login"
+                        class="button button-primary"
+                    >
+                        Create an Account
+                    </a>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+
+        <!-- =====================================
+             ABOUT
+        ====================================== -->
+
+        <section
+            id="about"
+            class="section about-section"
+        >
+
+            <div class="about-column">
+
+                <span class="eyebrow">
+                    ABOUT NODE HUB
+                </span>
+
+                <h2>
+                    One place to discover
+                    Node communities.
+                </h2>
+
+            </div>
+
+
+            <div class="about-column">
+
+                <p>
+                    Node Hub is a community-built directory
+                    designed to help Upland players discover
+                    Nodes, learn about their communities,
+                    find their locations, and connect with
+                    their official social channels.
+                </p>
+
+                <p>
+                    Each Node will have its own public profile
+                    containing information provided by its
+                    administrators and verified by the Node Hub
+                    team.
+                </p>
+
+                <p>
+                    English (US) is the default language.
+                    Portuguese (Brazil) is also available.
+                </p>
+
+            </div>
+
+        </section>
+
+
+
+        <!-- =====================================
+             SUPPORT NODE HUB
+        ====================================== -->
+
+        <section
+            id="support"
+            class="section support-section"
+        >
+
+            <div class="support-card">
+
+                <div class="support-icon">
+                    ☕
+                </div>
+
+                <span class="eyebrow">
+                    SUPPORT NODE HUB
+                </span>
+
+                <h2>
+                    Help keep the project free.
+                </h2>
+
+                <p>
+                    Node Hub is being built as a free
+                    community platform. If you like the
+                    project and want to help with its
+                    maintenance and future development,
+                    you can support us.
+                </p>
+
+
+                <a
+                    href="mailto:nodehubupland@gmail.com?subject=Support%20Node%20Hub"
+                    class="button button-primary"
+                >
+                    Support Node Hub
+                </a>
+
+
+                <div class="support-contact">
+
+                    <span>
+                        Contact
+                    </span>
+
+                    <a
+                        href="mailto:nodehubupland@gmail.com"
+                    >
+                        nodehubupland@gmail.com
+                    </a>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+
+        <!-- =====================================
+             LOGIN PREVIEW
+        ====================================== -->
+
+        <section
+            id="login"
+            class="section login-section"
+        >
+
+            <div class="login-card">
+
+                <span class="eyebrow">
+                    NODE HUB ACCOUNT
+                </span>
+
+                <h2>
+                    Sign in
+                </h2>
+
+                <p>
+                    Account registration, Node approval,
+                    administrator dashboards and the
+                    Node Hub Owner Dashboard will be
+                    connected in the next development stage.
+                </p>
+
+                <a
+                    href="mailto:nodehubupland@gmail.com?subject=Node%20Hub%20Beta"
+                    class="button button-secondary"
+                >
+                    Contact Node Hub
+                </a>
+
+            </div>
+
+        </section>
+
+
+
+        <!-- =====================================
+             ROADMAP
+        ====================================== -->
+
+        <section
+            id="roadmap"
+            class="section roadmap-section"
+        >
+
+            <div class="section-header">
+
+                <div>
+
+                    <span class="eyebrow">
+                        ROADMAP
+                    </span>
+
+                    <h2>
+                        Node Hub Evolution
+                    </h2>
+
+                    <p>
+                        The platform will continue to evolve
+                        with the community.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="roadmap-grid">
+
+
+                <!-- V1 -->
+
+                <article class="roadmap-card active">
+
+                    <span class="version">
+                        V1.0
+                    </span>
+
+                    <h3>
+                        Node Directory
+                    </h3>
+
+                    <ul>
+
+                        <li>
+                            Node registration
+                        </li>
+
+                        <li>
+                            Manual verification
+                        </li>
+
+                        <li>
+                            Verified Node profiles
+                        </li>
+
+                        <li>
+                            Node administrator dashboard
+                        </li>
+
+                        <li>
+                            Leader information
+                        </li>
+
+                        <li>
+                            Node logo and images
+                        </li>
+
+                        <li>
+                            Discord and social links
+                        </li>
+
+                        <li>
+                            Node location
+                        </li>
+
+                        <li>
+                            Worldwide directory
+                        </li>
+
+                        <li>
+                            English (US)
+                        </li>
+
+                        <li>
+                            Português (BR)
+                        </li>
+
+                        <li>
+                            Node Hub support
+                        </li>
+
+                    </ul>
+
+                </article>
+
+
+
+                <!-- V2 -->
+
+                <article class="roadmap-card">
+
+                    <span class="version">
+                        V2.0
+                    </span>
+
+                    <h3>
+                        Community
+                    </h3>
+
+                    <p>
+                        Coming soon.
+                    </p>
+
+                    <ul>
+
+                        <li>
+                            Advanced Node statistics
+                        </li>
+
+                        <li>
+                            Community features
+                        </li>
+
+                        <li>
+                            Node activity
+                        </li>
+
+                        <li>
+                            Media galleries
+                        </li>
+
+                        <li>
+                            Improved map
+                        </li>
+
+                        <li>
+                            Node discovery tools
+                        </li>
+
+                    </ul>
+
+                </article>
+
+
+
+                <!-- V3 -->
+
+                <article class="roadmap-card">
+
+                    <span class="version">
+                        V3.0
+                    </span>
+
+                    <h3>
+                        Ecosystem
+                    </h3>
+
+                    <p>
+                        Coming soon.
+                    </p>
+
+                    <ul>
+
+                        <li>
+                            Upland API integration
+                        </li>
+
+                        <li>
+                            Advanced statistics
+                        </li>
+
+                        <li>
+                            Node services
+                        </li>
+
+                        <li>
+                            Premium features
+                        </li>
+
+                        <li>
+                            Sparks related services
+                        </li>
+
+                        <li>
+                            UPX related services
+                        </li>
+
+                        <li>
+                            Expanded ecosystem tools
+                        </li>
+
+                    </ul>
+
+                </article>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+
+    <!-- =========================================
+         FOOTER
+    ========================================== -->
+
+    <footer class="site-footer">
+
+        <div class="footer-container">
+
+
+            <div class="footer-column">
+
+                <a
+                    href="#home"
+                    class="logo"
+                >
+
+                    <span class="logo-mark">
+                        ●
+                    </span>
+
+                    <span class="logo-text">
+                        NODE HUB
+                    </span>
+
+                </a>
+
+                <p>
+                    Discover Upland Nodes
+                    Around the World.
+                </p>
+
+            </div>
+
+
+            <div class="footer-column">
+
+                <strong>
+                    Community
+                </strong>
+
+                <a
+                    href="mailto:nodehubupland@gmail.com"
+                >
+                    Contact
+                </a>
+
+                <a href="#support">
+                    Support Node Hub
+                </a>
+
+                <a href="#nodes">
+                    Node Directory
+                </a>
+
+            </div>
+
+
+            <div class="footer-column">
+
+                <strong>
+                    Roadmap
+                </strong>
+
+                <a href="#roadmap">
+                    V1.0 Directory
+                </a>
+
+                <a href="#roadmap">
+                    V2.0 Community
+                </a>
+
+                <a href="#roadmap">
+                    V3.0 Ecosystem
+                </a>
+
+            </div>
+
+
+            <div class="footer-column">
+
+                <strong>
+                    Contact
+                </strong>
+
+                <a
+                    href="mailto:nodehubupland@gmail.com"
+                >
+                    nodehubupland@gmail.com
+                </a>
+
+                <span>
+                    Discord coming soon
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <div class="footer-bottom">
+
+            <p>
+                © 2026 Node Hub. Community project.
+            </p>
+
+            <p>
+                Node Hub is not affiliated with
+                Upland unless officially stated.
+            </p>
+
+        </div>
+
+    </footer>
+
+
+
+    <!-- =========================================
+         JAVASCRIPT
+    ========================================== -->
+
+    <script>
+
+        /*
+         * Node Hub V1.0
+         *
+         * This initial HTML build intentionally
+         * uses static content.
+         *
+         * The next development stages will connect:
+         *
+         * - Authentication
+         * - Database
+         * - Node submissions
+         * - Manual approval
+         * - User dashboard
+         * - Node administrator dashboard
+         * - Owner dashboard
+         * - Node search
+         * - Map
+         * - Upland API
+         *
+         */
+
+
+        const languageSelector =
+            document.getElementById(
+                "language-selector"
+            );
+
+
+        /*
+         * Language selector placeholder.
+         *
+         * The actual translation system will be
+         * implemented in app.js.
+         */
+
+        if (languageSelector) {
+
+            languageSelector.addEventListener(
+                "change",
+                function () {
+
+                    const selectedLanguage =
+                        this.value;
+
+                    if (
+                        selectedLanguage ===
+                        "pt-BR"
+                    ) {
+
+                        alert(
+                            "Português (BR) estará disponível na próxima etapa."
+                        );
+
+                        this.value =
+                            "en-US";
+
+                    }
+
+                }
+            );
+
+        }
+
+
+        /*
+         * Initial Node counter.
+         */
+
+        const nodeCount =
+            document.getElementById(
+                "node-count"
+            );
+
+
+        if (nodeCount) {
+
+            nodeCount.textContent =
+                "0 Nodes";
+
+        }
+
+    </script>
+
+</body>
+</html>

@@ -1,13 +1,19 @@
 // =============================================
 // NODE HUB
 // Supabase + Frontend + Authentication
+// Dashboard + Directory
+// =============================================
+
+
+// =============================================
+// SUPABASE CONFIG
 // =============================================
 
 const SUPABASE_URL =
     "https://ynqtzyzxspoxssjrjeve.supabase.co";
 
 const SUPABASE_KEY =
-    "sb_publishable_FoDbr9qgVeeIYfzEZNNN9Q_53aHxI2g";
+    "sb_publishable_FoDbr9qVeeIYfzEZNNN9Q_53aHxI2g";
 
 
 // =============================================
@@ -31,20 +37,13 @@ let currentUser = null;
 
 
 // =============================================
-// DOM
+// DOM REFERENCES
 // =============================================
 
-const nodeGrid =
-    document.getElementById("node-grid");
-
-const nodeCount =
-    document.getElementById("node-count");
-
-const searchInput =
-    document.getElementById("node-search");
-
-const continentFilter =
-    document.getElementById("continent-filter");
+let nodeGrid;
+let nodeCount;
+let searchInput;
+let continentFilter;
 
 
 // =============================================
@@ -55,20 +54,55 @@ document.addEventListener(
     "DOMContentLoaded",
     async () => {
 
-        await initializeAuth();
-
-        await loadNodes();
-
-        setupSearch();
+        cacheDOM();
 
         setupLanguage();
+
+        setupSearch();
 
         setupAuthForms();
 
         setupLogout();
 
+        setupNavigation();
+
+        await initializeAuth();
+
+        await loadNodes();
+
+        handleRoute();
+
     }
 );
+
+
+// =============================================
+// CACHE DOM
+// =============================================
+
+function cacheDOM() {
+
+    nodeGrid =
+        document.getElementById(
+            "node-grid"
+        );
+
+    nodeCount =
+        document.getElementById(
+            "node-count"
+        );
+
+    searchInput =
+        document.getElementById(
+            "node-search"
+        );
+
+    continentFilter =
+        document.getElementById(
+            "continent-filter"
+        );
+
+}
 
 
 // =============================================
@@ -84,6 +118,7 @@ async function initializeAuth() {
             error
         } = await db.auth.getSession();
 
+
         if (error) {
 
             console.error(
@@ -91,16 +126,23 @@ async function initializeAuth() {
                 error
             );
 
+            currentUser = null;
+
+            updateAuthUI();
+
             return;
 
         }
+
 
         currentUser =
             data.session
                 ? data.session.user
                 : null;
 
+
         updateAuthUI();
+
 
         db.auth.onAuthStateChange(
             async (event, session) => {
@@ -110,7 +152,27 @@ async function initializeAuth() {
                         ? session.user
                         : null;
 
+
                 updateAuthUI();
+
+
+                if (
+                    event === "SIGNED_IN" &&
+                    session
+                ) {
+
+                    handleRoute();
+
+                }
+
+
+                if (
+                    event === "SIGNED_OUT"
+                ) {
+
+                    showHome();
+
+                }
 
             }
         );
@@ -123,6 +185,10 @@ async function initializeAuth() {
             "Authentication error:",
             error
         );
+
+        currentUser = null;
+
+        updateAuthUI();
 
     }
 
@@ -140,21 +206,53 @@ function updateAuthUI() {
             'a[href="#login"]'
         );
 
-    signInLinks.forEach(link => {
 
-        if (currentUser) {
+    signInLinks.forEach(
+        link => {
 
-            link.textContent =
-                "Dashboard";
+            const text =
+                link.querySelector(
+                    "#auth-nav-text"
+                );
 
-        } else {
 
-            link.textContent =
-                "Sign in";
+            if (text) {
+
+                text.textContent =
+                    currentUser
+                        ? "Dashboard"
+                        : "Sign in";
+
+            }
+            else {
+
+                link.textContent =
+                    currentUser
+                        ? "Dashboard"
+                        : "Sign in";
+
+            }
+
+
+            if (currentUser) {
+
+                link.setAttribute(
+                    "href",
+                    "#dashboard"
+                );
+
+            }
+            else {
+
+                link.setAttribute(
+                    "href",
+                    "#login"
+                );
+
+            }
 
         }
-
-    });
+    );
 
 
     const accountStatus =
@@ -162,14 +260,18 @@ function updateAuthUI() {
             "account-status"
         );
 
+
     if (accountStatus) {
 
         if (currentUser) {
 
             accountStatus.textContent =
-                currentUser.email || "Signed in";
+                `Signed in as ${
+                    currentUser.email || "User"
+                }`;
 
-        } else {
+        }
+        else {
 
             accountStatus.textContent =
                 "Not signed in";
@@ -203,7 +305,10 @@ async function signUp() {
         );
 
 
-    if (!emailInput || !passwordInput) {
+    if (
+        !emailInput ||
+        !passwordInput
+    ) {
 
         alert(
             "Registration form not found."
@@ -226,7 +331,10 @@ async function signUp() {
             : "";
 
 
-    if (!email || !password) {
+    if (
+        !email ||
+        !password
+    ) {
 
         alert(
             "Please enter your email and password."
@@ -237,7 +345,9 @@ async function signUp() {
     }
 
 
-    if (password.length < 8) {
+    if (
+        password.length < 8
+    ) {
 
         alert(
             "Password must contain at least 8 characters."
@@ -298,6 +408,19 @@ async function signUp() {
                 "Account created. Please check your email to confirm your account."
             );
 
+            emailInput.value =
+                "";
+
+            passwordInput.value =
+                "";
+
+            if (usernameInput) {
+
+                usernameInput.value =
+                    "";
+
+            }
+
         }
 
     }
@@ -335,7 +458,10 @@ async function signIn() {
         );
 
 
-    if (!emailInput || !passwordInput) {
+    if (
+        !emailInput ||
+        !passwordInput
+    ) {
 
         alert(
             "Login form not found."
@@ -353,7 +479,10 @@ async function signIn() {
         passwordInput.value;
 
 
-    if (!email || !password) {
+    if (
+        !email ||
+        !password
+    ) {
 
         alert(
             "Please enter your email and password."
@@ -371,9 +500,11 @@ async function signIn() {
             error
         } = await db.auth.signInWithPassword({
 
-            email: email,
+            email:
+                email,
 
-            password: password
+            password:
+                password
 
         });
 
@@ -397,7 +528,9 @@ async function signIn() {
         currentUser =
             data.user;
 
+
         updateAuthUI();
+
 
         alert(
             "Welcome to Node Hub."
@@ -454,9 +587,12 @@ async function signOut() {
         }
 
 
-        currentUser = null;
+        currentUser =
+            null;
+
 
         updateAuthUI();
+
 
         window.location.hash =
             "home";
@@ -532,7 +668,7 @@ function setupAuthForms() {
 
 
 // =============================================
-// LOGOUT EVENT
+// LOGOUT EVENTS
 // =============================================
 
 function setupLogout() {
@@ -543,20 +679,1063 @@ function setupLogout() {
         );
 
 
-    logoutButtons.forEach(button => {
+    logoutButtons.forEach(
+        button => {
 
-        button.addEventListener(
-            "click",
-            event => {
+            button.addEventListener(
+                "click",
+                event => {
+
+                    event.preventDefault();
+
+                    signOut();
+
+                }
+            );
+
+        }
+    );
+
+}
+
+
+// =============================================
+// NAVIGATION
+// =============================================
+
+function setupNavigation() {
+
+    window.addEventListener(
+        "hashchange",
+        handleRoute
+    );
+
+
+    document.addEventListener(
+        "click",
+        event => {
+
+            const link =
+                event.target.closest(
+                    'a[href="#dashboard"]'
+                );
+
+
+            if (!link) {
+                return;
+            }
+
+
+            if (!currentUser) {
 
                 event.preventDefault();
 
-                signOut();
+                window.location.hash =
+                    "login";
+
+                alert(
+                    "Please sign in to access your dashboard."
+                );
+
+            }
+
+        }
+    );
+
+}
+
+
+// =============================================
+// ROUTER
+// =============================================
+
+function handleRoute() {
+
+    const hash =
+        window.location.hash
+            .replace("#", "")
+            .trim();
+
+
+    if (
+        hash === "dashboard"
+    ) {
+
+        if (!currentUser) {
+
+            showHome();
+
+            window.location.hash =
+                "login";
+
+            return;
+
+        }
+
+
+        showDashboard();
+
+        return;
+
+    }
+
+
+    hideDashboard();
+
+}
+
+
+// =============================================
+// SHOW DASHBOARD
+// =============================================
+
+function showDashboard() {
+
+    let dashboard =
+        document.getElementById(
+            "dashboard"
+        );
+
+
+    if (!dashboard) {
+
+        dashboard =
+            createDashboard();
+
+        document
+            .querySelector("main")
+            .appendChild(
+                dashboard
+            );
+
+    }
+
+
+    dashboard.style.display =
+        "block";
+
+
+    document
+        .querySelectorAll(
+            "main > section:not(#dashboard)"
+        )
+        .forEach(
+            section => {
+
+                section.style.display =
+                    "none";
 
             }
         );
 
+
+    renderDashboard();
+
+    window.scrollTo({
+        top: 0,
+        behavior: "smooth"
     });
+
+}
+
+
+// =============================================
+// HIDE DASHBOARD
+// =============================================
+
+function hideDashboard() {
+
+    const dashboard =
+        document.getElementById(
+            "dashboard"
+        );
+
+
+    if (dashboard) {
+
+        dashboard.style.display =
+            "none";
+
+    }
+
+
+    document
+        .querySelectorAll(
+            "main > section:not(#dashboard)"
+        )
+        .forEach(
+            section => {
+
+                section.style.display =
+                    "";
+
+            }
+        );
+
+}
+
+
+// =============================================
+// HOME
+// =============================================
+
+function showHome() {
+
+    hideDashboard();
+
+    window.location.hash =
+        "home";
+
+}
+
+
+// =============================================
+// CREATE DASHBOARD
+// =============================================
+
+function createDashboard() {
+
+    const section =
+        document.createElement(
+            "section"
+        );
+
+
+    section.id =
+        "dashboard";
+
+    section.className =
+        "section section-alt";
+
+
+    section.innerHTML = `
+
+        <div class="container">
+
+            <div class="section-heading">
+
+                <span class="eyebrow">
+                    NODE HUB ACCOUNT
+                </span>
+
+                <h1>
+                    Dashboard
+                </h1>
+
+                <p>
+                    Manage your Node Hub account
+                    and Node submissions.
+                </p>
+
+            </div>
+
+
+            <div class="auth-container">
+
+                <div class="auth-card">
+
+                    <span class="eyebrow">
+                        ACCOUNT
+                    </span>
+
+                    <h2>
+                        Welcome
+                    </h2>
+
+                    <p id="dashboard-welcome">
+                        Loading account...
+                    </p>
+
+                    <p id="dashboard-email">
+                    </p>
+
+                    <button
+                        type="button"
+                        id="register-node-button"
+                        class="button button-primary"
+                    >
+                        Register My Node
+                    </button>
+
+                    <button
+                        type="button"
+                        data-action="logout"
+                        class="button button-secondary"
+                    >
+                        Sign Out
+                    </button>
+
+                </div>
+
+
+                <div class="auth-card">
+
+                    <span class="eyebrow">
+                        YOUR NODES
+                    </span>
+
+                    <h2>
+                        My Nodes
+                    </h2>
+
+                    <div id="my-nodes">
+
+                        <p>
+                            No Nodes registered yet.
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div
+                id="register-node-panel"
+                style="display:none;"
+            >
+
+                <div class="auth-card">
+
+                    <span class="eyebrow">
+                        NODE REGISTRATION
+                    </span>
+
+                    <h2>
+                        Register My Node
+                    </h2>
+
+                    <p>
+                        Node registration will be submitted
+                        for review by the Node Hub team.
+                    </p>
+
+
+                    <form id="register-node-form">
+
+                        <label>
+                            Node Name
+                        </label>
+
+                        <input
+                            type="text"
+                            id="node-name"
+                            required
+                            placeholder="Your Node name"
+                        >
+
+
+                        <label>
+                            Description
+                        </label>
+
+                        <textarea
+                            id="node-description"
+                            rows="5"
+                            placeholder="Tell us about your Node"
+                        ></textarea>
+
+
+                        <label>
+                            City
+                        </label>
+
+                        <input
+                            type="text"
+                            id="node-city"
+                            placeholder="City"
+                        >
+
+
+                        <label>
+                            Country
+                        </label>
+
+                        <input
+                            type="text"
+                            id="node-country"
+                            placeholder="Country"
+                        >
+
+
+                        <label>
+                            Continent
+                        </label>
+
+                        <select
+                            id="node-continent"
+                        >
+
+                            <option value="">
+                                Select continent
+                            </option>
+
+                            <option value="North America">
+                                North America
+                            </option>
+
+                            <option value="South America">
+                                South America
+                            </option>
+
+                            <option value="Europe">
+                                Europe
+                            </option>
+
+                            <option value="Asia">
+                                Asia
+                            </option>
+
+                            <option value="Africa">
+                                Africa
+                            </option>
+
+                            <option value="Oceania">
+                                Oceania
+                            </option>
+
+                        </select>
+
+
+                        <label>
+                            Logo URL
+                        </label>
+
+                        <input
+                            type="url"
+                            id="node-logo"
+                            placeholder="https://..."
+                        >
+
+
+                        <label>
+                            Discord
+                        </label>
+
+                        <input
+                            type="url"
+                            id="node-discord"
+                            placeholder="https://discord.gg/..."
+                        >
+
+
+                        <label>
+                            X / Twitter
+                        </label>
+
+                        <input
+                            type="url"
+                            id="node-twitter"
+                            placeholder="https://x.com/..."
+                        >
+
+
+                        <label>
+                            Telegram
+                        </label>
+
+                        <input
+                            type="url"
+                            id="node-telegram"
+                            placeholder="https://t.me/..."
+                        >
+
+
+                        <div style="margin-top:20px;">
+
+                            <button
+                                type="submit"
+                                class="button button-primary"
+                            >
+                                Submit Node for Review
+                            </button>
+
+                            <button
+                                type="button"
+                                id="cancel-register-node"
+                                class="button button-secondary"
+                            >
+                                Cancel
+                            </button>
+
+                        </div>
+
+                    </form>
+
+                </div>
+
+            </div>
+
+
+            <div style="margin-top:30px;">
+
+                <a
+                    href="#home"
+                    class="button button-secondary"
+                >
+                    Back to Directory
+                </a>
+
+            </div>
+
+        </div>
+
+    `;
+
+
+    return section;
+
+}
+
+
+// =============================================
+// RENDER DASHBOARD
+// =============================================
+
+function renderDashboard() {
+
+    if (!currentUser) {
+        return;
+    }
+
+
+    const welcome =
+        document.getElementById(
+            "dashboard-welcome"
+        );
+
+    const email =
+        document.getElementById(
+            "dashboard-email"
+        );
+
+
+    const username =
+        currentUser.user_metadata
+            ?.username ||
+        "Node Hub Member";
+
+
+    if (welcome) {
+
+        welcome.textContent =
+            `Welcome, ${username}`;
+
+    }
+
+
+    if (email) {
+
+        email.textContent =
+            currentUser.email || "";
+
+    }
+
+
+    const logoutButtons =
+        document.querySelectorAll(
+            "#dashboard [data-action='logout']"
+        );
+
+
+    logoutButtons.forEach(
+        button => {
+
+            button.onclick =
+                event => {
+
+                    event.preventDefault();
+
+                    signOut();
+
+                };
+
+        }
+    );
+
+
+    const registerButton =
+        document.getElementById(
+            "register-node-button"
+        );
+
+
+    const registerPanel =
+        document.getElementById(
+            "register-node-panel"
+        );
+
+
+    const cancelButton =
+        document.getElementById(
+            "cancel-register-node"
+        );
+
+
+    if (registerButton) {
+
+        registerButton.onclick =
+            () => {
+
+                if (registerPanel) {
+
+                    registerPanel.style.display =
+                        "block";
+
+                }
+
+                registerButton.style.display =
+                    "none";
+
+            };
+
+    }
+
+
+    if (cancelButton) {
+
+        cancelButton.onclick =
+            () => {
+
+                if (registerPanel) {
+
+                    registerPanel.style.display =
+                        "none";
+
+                }
+
+                if (registerButton) {
+
+                    registerButton.style.display =
+                        "inline-flex";
+
+                }
+
+            };
+
+    }
+
+
+    const registerForm =
+        document.getElementById(
+            "register-node-form"
+        );
+
+
+    if (registerForm) {
+
+        registerForm.onsubmit =
+            event => {
+
+                event.preventDefault();
+
+                submitNode();
+
+            };
+
+    }
+
+
+    loadMyNodes();
+
+}
+
+
+// =============================================
+// LOAD USER NODES
+// =============================================
+
+async function loadMyNodes() {
+
+    const container =
+        document.getElementById(
+            "my-nodes"
+        );
+
+
+    if (
+        !container ||
+        !currentUser
+    ) {
+
+        return;
+
+    }
+
+
+    container.innerHTML =
+        "<p>Loading your Nodes...</p>";
+
+
+    try {
+
+        /*
+         * IMPORTANT:
+         * We first try the administrator
+         * relationship using the current
+         * authenticated user.
+         *
+         * If your final database uses another
+         * column name, we will adjust this
+         * when building the full Node Admin system.
+         */
+
+        const {
+            data,
+            error
+        } = await db
+            .from("nodes")
+            .select("*")
+            .eq(
+                "created_by",
+                currentUser.id
+            )
+            .order(
+                "created_at",
+                {
+                    ascending: false
+                }
+            );
+
+
+        if (error) {
+
+            console.warn(
+                "Could not load user Nodes:",
+                error.message
+            );
+
+            container.innerHTML = `
+
+                <p>
+                    No Nodes registered yet.
+                </p>
+
+                <p>
+                    Use "Register My Node" to
+                    submit your first Node.
+                </p>
+
+            `;
+
+            return;
+
+        }
+
+
+        if (!data || !data.length) {
+
+            container.innerHTML = `
+
+                <p>
+                    No Nodes registered yet.
+                </p>
+
+                <p>
+                    Your submitted Nodes will
+                    appear here.
+                </p>
+
+            `;
+
+            return;
+
+        }
+
+
+        container.innerHTML =
+            "";
+
+
+        data.forEach(
+            node => {
+
+                const card =
+                    document.createElement(
+                        "div"
+                    );
+
+
+                card.className =
+                    "about-card";
+
+
+                card.innerHTML = `
+
+                    <h3>
+                        ${escapeHTML(
+                            node.name ||
+                            "Unnamed Node"
+                        )}
+                    </h3>
+
+                    <p>
+                        Status:
+                        <strong>
+                            ${escapeHTML(
+                                node.status ||
+                                "pending"
+                            )}
+                        </strong>
+                    </p>
+
+                    ${
+                        node.city
+                            ? `
+                                <p>
+                                    ${escapeHTML(
+                                        node.city
+                                    )}
+                                    ${
+                                        node.country
+                                            ? `, ${escapeHTML(
+                                                node.country
+                                            )}`
+                                            : ""
+                                    }
+                                </p>
+                            `
+                            : ""
+                    }
+
+                `;
+
+
+                container.appendChild(
+                    card
+                );
+
+            }
+        );
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Unexpected Node loading error:",
+            error
+        );
+
+
+        container.innerHTML =
+            "<p>No Nodes registered yet.</p>";
+
+    }
+
+}
+
+
+// =============================================
+// SUBMIT NODE
+// =============================================
+
+async function submitNode() {
+
+    if (!currentUser) {
+
+        alert(
+            "Please sign in first."
+        );
+
+        window.location.hash =
+            "login";
+
+        return;
+
+    }
+
+
+    const name =
+        document.getElementById(
+            "node-name"
+        )?.value.trim();
+
+
+    const description =
+        document.getElementById(
+            "node-description"
+        )?.value.trim();
+
+
+    const city =
+        document.getElementById(
+            "node-city"
+        )?.value.trim();
+
+
+    const country =
+        document.getElementById(
+            "node-country"
+        )?.value.trim();
+
+
+    const continent =
+        document.getElementById(
+            "node-continent"
+        )?.value;
+
+
+    const logo =
+        document.getElementById(
+            "node-logo"
+        )?.value.trim();
+
+
+    const discord =
+        document.getElementById(
+            "node-discord"
+        )?.value.trim();
+
+
+    const twitter =
+        document.getElementById(
+            "node-twitter"
+        )?.value.trim();
+
+
+    const telegram =
+        document.getElementById(
+            "node-telegram"
+        )?.value.trim();
+
+
+    if (!name) {
+
+        alert(
+            "Please enter your Node name."
+        );
+
+        return;
+
+    }
+
+
+    try {
+
+        const {
+            error
+        } = await db
+            .from("nodes")
+            .insert({
+
+                name:
+                    name,
+
+                description:
+                    description || null,
+
+                city:
+                    city || null,
+
+                country:
+                    country || null,
+
+                continent:
+                    continent || null,
+
+                logo_url:
+                    logo || null,
+
+                discord_url:
+                    discord || null,
+
+                twitter_url:
+                    twitter || null,
+
+                telegram_url:
+                    telegram || null,
+
+                status:
+                    "pending",
+
+                created_by:
+                    currentUser.id
+
+            });
+
+
+        if (error) {
+
+            console.error(
+                "Node submission error:",
+                error
+            );
+
+            alert(
+                error.message
+            );
+
+            return;
+
+        }
+
+
+        alert(
+            "Your Node has been submitted for review."
+        );
+
+
+        const form =
+            document.getElementById(
+                "register-node-form"
+            );
+
+
+        if (form) {
+
+            form.reset();
+
+        }
+
+
+        const panel =
+            document.getElementById(
+                "register-node-panel"
+            );
+
+
+        const button =
+            document.getElementById(
+                "register-node-button"
+            );
+
+
+        if (panel) {
+
+            panel.style.display =
+                "none";
+
+        }
+
+
+        if (button) {
+
+            button.style.display =
+                "inline-flex";
+
+        }
+
+
+        await loadMyNodes();
+
+        await loadNodes();
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Unexpected Node submission error:",
+            error
+        );
+
+        alert(
+            "Unable to submit your Node."
+        );
+
+    }
 
 }
 
@@ -575,7 +1754,10 @@ async function loadNodes() {
         } = await db
             .from("nodes")
             .select("*")
-            .eq("status", "approved")
+            .eq(
+                "status",
+                "approved"
+            )
             .order(
                 "created_at",
                 {
@@ -601,14 +1783,17 @@ async function loadNodes() {
         nodes =
             data || [];
 
-        renderNodes(nodes);
+
+        renderNodes(
+            nodes
+        );
 
     }
 
     catch (error) {
 
         console.error(
-            "Unexpected error:",
+            "Unexpected Node error:",
             error
         );
 
@@ -655,14 +1840,21 @@ function renderNodes(list) {
     }
 
 
-    list.forEach(node => {
+    list.forEach(
+        node => {
 
-        const card =
-            createNodeCard(node);
+            const card =
+                createNodeCard(
+                    node
+                );
 
-        nodeGrid.appendChild(card);
 
-    });
+            nodeGrid.appendChild(
+                card
+            );
+
+        }
+    );
 
 }
 
@@ -696,7 +1888,8 @@ function createNodeCard(node) {
                     <img
                         src="${escapeHTML(logo)}"
                         alt="${escapeHTML(
-                            node.name || "Node"
+                            node.name ||
+                            "Node"
                         )}"
                         loading="lazy"
                     >
@@ -742,7 +1935,6 @@ function createNodeCard(node) {
 
             ${
                 node.description
-
                     ? `
                         <p class="node-description">
                             ${escapeHTML(
@@ -750,7 +1942,6 @@ function createNodeCard(node) {
                             )}
                         </p>
                     `
-
                     : ""
             }
 
@@ -758,7 +1949,6 @@ function createNodeCard(node) {
 
                 ${
                     node.discord_url
-
                         ? `
                             <a
                                 href="${safeURL(
@@ -770,13 +1960,11 @@ function createNodeCard(node) {
                                 Discord
                             </a>
                         `
-
                         : ""
                 }
 
                 ${
                     node.telegram_url
-
                         ? `
                             <a
                                 href="${safeURL(
@@ -788,13 +1976,11 @@ function createNodeCard(node) {
                                 Telegram
                             </a>
                         `
-
                         : ""
                 }
 
                 ${
                     node.twitter_url
-
                         ? `
                             <a
                                 href="${safeURL(
@@ -806,7 +1992,6 @@ function createNodeCard(node) {
                                 X / Twitter
                             </a>
                         `
-
                         : ""
                 }
 
@@ -935,46 +2120,53 @@ function filterNodes() {
 
 
     const filtered =
-        nodes.filter(node => {
+        nodes.filter(
+            node => {
 
-            const text = [
+                const text = [
 
-                node.name,
+                    node.name,
 
-                node.city,
+                    node.city,
 
-                node.country,
+                    node.country,
 
-                node.description
+                    node.description
 
-            ]
+                ]
 
-                .filter(Boolean)
+                    .filter(Boolean)
 
-                .join(" ")
+                    .join(" ")
 
-                .toLowerCase();
-
-
-            const matchesSearch =
-                !search ||
-                text.includes(search);
+                    .toLowerCase();
 
 
-            const matchesContinent =
-                !continent ||
-                node.continent === continent;
+                const matchesSearch =
+                    !search ||
+                    text.includes(
+                        search
+                    );
 
 
-            return (
-                matchesSearch &&
-                matchesContinent
-            );
-
-        });
+                const matchesContinent =
+                    !continent ||
+                    node.continent ===
+                        continent;
 
 
-    renderNodes(filtered);
+                return (
+                    matchesSearch &&
+                    matchesContinent
+                );
+
+            }
+        );
+
+
+    renderNodes(
+        filtered
+    );
 
 }
 
@@ -1010,7 +2202,9 @@ function setupLanguage() {
             );
 
 
-            if (language === "pt-BR") {
+            if (
+                language === "pt-BR"
+            ) {
 
                 alert(
                     "Português (BR) translation will be activated in the next development stage."
@@ -1097,8 +2291,11 @@ function safeURL(url) {
 
 
         if (
-            parsed.protocol === "https:" ||
-            parsed.protocol === "http:"
+            parsed.protocol ===
+                "https:" ||
+
+            parsed.protocol ===
+                "http:"
         ) {
 
             return escapeHTML(

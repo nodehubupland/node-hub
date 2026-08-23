@@ -1,6 +1,7 @@
+```javascript
 // =============================================
 // NODE HUB
-// Supabase + Authentication + Dashboard
+// Supabase + Frontend + Authentication
 // =============================================
 
 const SUPABASE_URL =
@@ -11,7 +12,7 @@ const SUPABASE_KEY =
 
 
 // =============================================
-// SUPABASE
+// SUPABASE CLIENT
 // =============================================
 
 const { createClient } = supabase;
@@ -34,32 +35,26 @@ let currentUser = null;
 // DOM
 // =============================================
 
-let nodeGrid;
-let nodeCount;
-let searchInput;
-let continentFilter;
+const nodeGrid =
+    document.getElementById("node-grid");
+
+const nodeCount =
+    document.getElementById("node-count");
+
+const searchInput =
+    document.getElementById("node-search");
+
+const continentFilter =
+    document.getElementById("continent-filter");
 
 
 // =============================================
-// START
+// INITIALIZE
 // =============================================
 
 document.addEventListener(
     "DOMContentLoaded",
     async () => {
-
-        nodeGrid =
-            document.getElementById("node-grid");
-
-        nodeCount =
-            document.getElementById("node-count");
-
-        searchInput =
-            document.getElementById("node-search");
-
-        continentFilter =
-            document.getElementById("continent-filter");
-
 
         await initializeAuth();
 
@@ -75,14 +70,12 @@ document.addEventListener(
 
         setupNavigation();
 
-        handleRoute();
-
     }
 );
 
 
 // =============================================
-// AUTH
+// AUTHENTICATION
 // =============================================
 
 async function initializeAuth() {
@@ -93,7 +86,6 @@ async function initializeAuth() {
             data,
             error
         } = await db.auth.getSession();
-
 
         if (error) {
 
@@ -106,15 +98,12 @@ async function initializeAuth() {
 
         }
 
-
         currentUser =
             data.session
                 ? data.session.user
                 : null;
 
-
         updateAuthUI();
-
 
         db.auth.onAuthStateChange(
             async (event, session) => {
@@ -124,32 +113,7 @@ async function initializeAuth() {
                         ? session.user
                         : null;
 
-
                 updateAuthUI();
-
-
-                if (
-                    event === "SIGNED_IN"
-                ) {
-
-                    window.location.hash =
-                        "dashboard";
-
-                    handleRoute();
-
-                }
-
-
-                if (
-                    event === "SIGNED_OUT"
-                ) {
-
-                    window.location.hash =
-                        "home";
-
-                    handleRoute();
-
-                }
 
             }
         );
@@ -179,7 +143,6 @@ function updateAuthUI() {
             'a[href="#login"]'
         );
 
-
     signInLinks.forEach(link => {
 
         if (currentUser) {
@@ -187,16 +150,10 @@ function updateAuthUI() {
             link.textContent =
                 "Dashboard";
 
-            link.href =
-                "#dashboard";
-
         } else {
 
             link.textContent =
                 "Sign in";
-
-            link.href =
-                "#login";
 
         }
 
@@ -208,14 +165,12 @@ function updateAuthUI() {
             "account-status"
         );
 
-
     if (accountStatus) {
 
         if (currentUser) {
 
             accountStatus.textContent =
-                currentUser.email ||
-                "Signed in";
+                currentUser.email || "Signed in";
 
         } else {
 
@@ -225,50 +180,6 @@ function updateAuthUI() {
         }
 
     }
-
-
-    updateSubmitLinks();
-
-}
-
-
-// =============================================
-// SUBMIT NODE LINKS
-// =============================================
-
-function updateSubmitLinks() {
-
-    const submitLinks =
-        document.querySelectorAll(
-            'a[href="#submit"]'
-        );
-
-
-    submitLinks.forEach(link => {
-
-        link.onclick = function(event) {
-
-            event.preventDefault();
-
-
-            if (currentUser) {
-
-                window.location.hash =
-                    "submit";
-
-            } else {
-
-                window.location.hash =
-                    "login";
-
-            }
-
-
-            handleRoute();
-
-        };
-
-    });
 
 }
 
@@ -295,10 +206,7 @@ async function signUp() {
         );
 
 
-    if (
-        !emailInput ||
-        !passwordInput
-    ) {
+    if (!emailInput || !passwordInput) {
 
         alert(
             "Registration form not found."
@@ -357,7 +265,7 @@ async function signUp() {
             options: {
 
                 emailRedirectTo:
-                    "https://nodehubupland.github.io/node-hub/#dashboard",
+                    "https://nodehubupland.github.io/node-hub/",
 
                 data: {
 
@@ -387,31 +295,11 @@ async function signUp() {
         }
 
 
-        if (
-            data.user &&
-            !data.session
-        ) {
+        if (data.user) {
 
             alert(
-                "Account created successfully. Check your email to confirm your account."
+                "Account created. Please check your email to confirm your account."
             );
-
-            return;
-
-        }
-
-
-        if (data.session) {
-
-            currentUser =
-                data.session.user;
-
-            updateAuthUI();
-
-            window.location.hash =
-                "dashboard";
-
-            handleRoute();
 
         }
 
@@ -450,10 +338,7 @@ async function signIn() {
         );
 
 
-    if (
-        !emailInput ||
-        !passwordInput
-    ) {
+    if (!emailInput || !passwordInput) {
 
         alert(
             "Login form not found."
@@ -489,11 +374,9 @@ async function signIn() {
             error
         } = await db.auth.signInWithPassword({
 
-            email:
-                email,
+            email: email,
 
-            password:
-                password
+            password: password
 
         });
 
@@ -517,15 +400,25 @@ async function signIn() {
         currentUser =
             data.user;
 
-
         updateAuthUI();
+
+        alert(
+            "Welcome to Node Hub."
+        );
 
 
         window.location.hash =
             "dashboard";
 
 
-        handleRoute();
+        setTimeout(
+            () => {
+
+                updateDashboard();
+
+            },
+            100
+        );
 
     }
 
@@ -574,18 +467,17 @@ async function signOut() {
         }
 
 
-        currentUser =
-            null;
-
+        currentUser = null;
 
         updateAuthUI();
-
 
         window.location.hash =
             "home";
 
 
-        handleRoute();
+        alert(
+            "You have been signed out."
+        );
 
     }
 
@@ -602,7 +494,7 @@ async function signOut() {
 
 
 // =============================================
-// AUTH FORMS
+// AUTH FORM EVENTS
 // =============================================
 
 function setupAuthForms() {
@@ -653,18 +545,18 @@ function setupAuthForms() {
 
 
 // =============================================
-// LOGOUT BUTTONS
+// LOGOUT EVENT
 // =============================================
 
 function setupLogout() {
 
-    const buttons =
+    const logoutButtons =
         document.querySelectorAll(
             "[data-action='logout']"
         );
 
 
-    buttons.forEach(button => {
+    logoutButtons.forEach(button => {
 
         button.addEventListener(
             "click",
@@ -688,162 +580,59 @@ function setupLogout() {
 
 function setupNavigation() {
 
-    window.addEventListener(
-        "hashchange",
-        handleRoute
-    );
+    document.addEventListener(
+        "click",
+        event => {
+
+            const link =
+                event.target.closest(
+                    "a[href^='#']"
+                );
 
 
-    const links =
-        document.querySelectorAll(
-            "a[href^='#']"
-        );
+            if (!link) {
+                return;
+            }
 
 
-    links.forEach(link => {
+            const href =
+                link.getAttribute(
+                    "href"
+                );
 
-        link.addEventListener(
-            "click",
-            () => {
+
+            if (
+                href === "#dashboard" ||
+                href === "#submit"
+            ) {
+
+                if (!currentUser) {
+
+                    event.preventDefault();
+
+                    window.location.hash =
+                        "login";
+
+                    return;
+
+                }
+
+            }
+
+
+            if (
+                href === "#dashboard"
+            ) {
 
                 setTimeout(
-                    handleRoute,
-                    50
+                    updateDashboard,
+                    100
                 );
 
             }
-        );
-
-    });
-
-}
-
-
-// =============================================
-// ROUTER
-// =============================================
-
-function handleRoute() {
-
-    const hash =
-        window.location.hash
-            .replace(
-                "#",
-                ""
-            )
-            .toLowerCase();
-
-
-    if (
-        hash === "dashboard"
-    ) {
-
-        if (!currentUser) {
-
-            window.location.hash =
-                "login";
-
-            return;
 
         }
-
-
-        showDashboard();
-
-        return;
-
-    }
-
-
-    if (
-        hash === "submit"
-    ) {
-
-        if (!currentUser) {
-
-            window.location.hash =
-                "login";
-
-            return;
-
-        }
-
-
-        showSubmitNode();
-
-        return;
-
-    }
-
-
-    if (
-        hash === "login"
-    ) {
-
-        showLoginSection();
-
-        return;
-
-    }
-
-
-    showNormalSite();
-
-}
-
-
-// =============================================
-// NORMAL SITE
-// =============================================
-
-function showNormalSite() {
-
-    const dashboard =
-        document.getElementById(
-            "dynamic-dashboard"
-        );
-
-    const submit =
-        document.getElementById(
-            "dynamic-submit"
-        );
-
-
-    if (dashboard) {
-
-        dashboard.remove();
-
-    }
-
-
-    if (submit) {
-
-        submit.remove();
-
-    }
-
-}
-
-
-// =============================================
-// LOGIN
-// =============================================
-
-function showLoginSection() {
-
-    const login =
-        document.getElementById(
-            "login"
-        );
-
-
-    if (login) {
-
-        login.scrollIntoView({
-            behavior: "smooth"
-        });
-
-    }
+    );
 
 }
 
@@ -852,353 +641,149 @@ function showLoginSection() {
 // DASHBOARD
 // =============================================
 
-function showDashboard() {
+async function updateDashboard() {
 
-    removeDynamicSections();
+    if (!currentUser) {
+        return;
+    }
 
 
-    const section =
-        document.createElement(
-            "section"
+    const emailElement =
+        document.getElementById(
+            "dashboard-email"
         );
 
 
-    section.id =
-        "dynamic-dashboard";
+    if (emailElement) {
 
-
-    section.className =
-        "section dashboard-section";
-
-
-    const email =
-        currentUser.email || "";
-
-
-    section.innerHTML = `
-
-        <div class="container">
-
-            <div class="dashboard-box">
-
-                <p class="eyebrow">
-                    NODE HUB ACCOUNT
-                </p>
-
-                <h2>
-                    Welcome to Node Hub
-                </h2>
-
-                <p>
-                    You are signed in and ready to manage your Node.
-                </p>
-
-                <p>
-                    <strong>
-                        ${escapeHTML(email)}
-                    </strong>
-                </p>
-
-                <div class="dashboard-actions">
-
-                    <a
-                        href="#submit"
-                        class="button button-primary"
-                    >
-                        Register My Node
-                    </a>
-
-                    <a
-                        href="#nodes"
-                        class="button"
-                    >
-                        Explore Nodes
-                    </a>
-
-                    <button
-                        type="button"
-                        class="button"
-                        data-action="logout"
-                    >
-                        Sign out
-                    </button>
-
-                </div>
-
-            </div>
-
-        </div>
-
-    `;
-
-
-    document.body.appendChild(
-        section
-    );
-
-
-    section.scrollIntoView({
-        behavior: "smooth"
-    });
-
-
-    const logoutButton =
-        section.querySelector(
-            "[data-action='logout']"
-        );
-
-
-    if (logoutButton) {
-
-        logoutButton.addEventListener(
-            "click",
-            signOut
-        );
+        emailElement.textContent =
+            currentUser.email || "";
 
     }
 
 
-    const submitButton =
-        section.querySelector(
-            'a[href="#submit"]'
+    const usernameElement =
+        document.getElementById(
+            "dashboard-username"
         );
 
 
-    if (submitButton) {
+    if (usernameElement) {
 
-        submitButton.addEventListener(
-            "click",
-            event => {
+        usernameElement.textContent =
+            currentUser.user_metadata?.username ||
+            currentUser.email?.split("@")[0] ||
+            "User";
 
-                event.preventDefault();
+    }
 
-                window.location.hash =
-                    "submit";
 
-                handleRoute();
+    await loadMyNodes();
 
+}
+
+
+// =============================================
+// LOAD MY NODES
+// =============================================
+
+async function loadMyNodes() {
+
+    if (!currentUser) {
+        return;
+    }
+
+
+    const {
+        data,
+        error
+    } = await db
+        .from("nodes")
+        .select("*")
+        .eq(
+            "owner_id",
+            currentUser.id
+        )
+        .order(
+            "created_at",
+            {
+                ascending: false
             }
         );
 
-    }
 
-}
+    if (error) {
 
-
-// =============================================
-// SUBMIT NODE
-// =============================================
-
-function showSubmitNode() {
-
-    removeDynamicSections();
-
-
-    const section =
-        document.createElement(
-            "section"
+        console.error(
+            "Error loading my Nodes:",
+            error
         );
 
+        return;
 
-    section.id =
-        "dynamic-submit";
-
-
-    section.className =
-        "section submit-section";
+    }
 
 
-    section.innerHTML = `
-
-        <div class="container">
-
-            <div class="dashboard-box">
-
-                <p class="eyebrow">
-                    NODE REGISTRATION
-                </p>
-
-                <h2>
-                    Register Your Node
-                </h2>
-
-                <p>
-                    Submit your Node for review by the Node Hub team.
-                </p>
-
-                <form id="dynamic-node-form">
-
-                    <label>
-                        Node Name
-                        <input
-                            type="text"
-                            id="new-node-name"
-                            required
-                        >
-                    </label>
-
-                    <label>
-                        City
-                        <input
-                            type="text"
-                            id="new-node-city"
-                            required
-                        >
-                    </label>
-
-                    <label>
-                        Country
-                        <input
-                            type="text"
-                            id="new-node-country"
-                            required
-                        >
-                    </label>
-
-                    <label>
-                        Continent
-                        <select
-                            id="new-node-continent"
-                            required
-                        >
-                            <option value="">
-                                Select continent
-                            </option>
-
-                            <option value="North America">
-                                North America
-                            </option>
-
-                            <option value="South America">
-                                South America
-                            </option>
-
-                            <option value="Europe">
-                                Europe
-                            </option>
-
-                            <option value="Asia">
-                                Asia
-                            </option>
-
-                            <option value="Africa">
-                                Africa
-                            </option>
-
-                            <option value="Oceania">
-                                Oceania
-                            </option>
-
-                        </select>
-                    </label>
-
-                    <label>
-                        Description
-                        <textarea
-                            id="new-node-description"
-                            rows="5"
-                        ></textarea>
-                    </label>
-
-                    <label>
-                        Discord URL
-                        <input
-                            type="url"
-                            id="new-node-discord"
-                            placeholder="https://discord.gg/..."
-                        >
-                    </label>
-
-                    <label>
-                        Telegram URL
-                        <input
-                            type="url"
-                            id="new-node-telegram"
-                            placeholder="https://t.me/..."
-                        >
-                    </label>
-
-                    <label>
-                        X / Twitter URL
-                        <input
-                            type="url"
-                            id="new-node-twitter"
-                            placeholder="https://x.com/..."
-                        >
-                    </label>
-
-                    <div class="dashboard-actions">
-
-                        <button
-                            type="submit"
-                            class="button button-primary"
-                        >
-                            Submit Node
-                        </button>
-
-                        <a
-                            href="#dashboard"
-                            class="button"
-                        >
-                            Back to Dashboard
-                        </a>
-
-                    </div>
-
-                </form>
-
-                <div
-                    id="node-submit-message"
-                ></div>
-
-            </div>
-
-        </div>
-
-    `;
-
-
-    document.body.appendChild(
-        section
-    );
-
-
-    section.scrollIntoView({
-        behavior: "smooth"
-    });
-
-
-    const form =
+    const container =
         document.getElementById(
-            "dynamic-node-form"
+            "my-nodes"
         );
 
 
-    if (form) {
+    if (!container) {
+        return;
+    }
 
-        form.addEventListener(
-            "submit",
-            submitNode
-        );
+
+    if (!data || !data.length) {
+
+        container.innerHTML = `
+            <p>
+                No Nodes registered yet.
+            </p>
+        `;
+
+        return;
 
     }
+
+
+    container.innerHTML =
+        data.map(node => {
+
+            return `
+                <div class="my-node">
+
+                    <strong>
+                        ${escapeHTML(
+                            node.name || "Unnamed Node"
+                        )}
+                    </strong>
+
+                    <span>
+                        ${escapeHTML(
+                            node.status || "pending"
+                        )}
+                    </span>
+
+                </div>
+            `;
+
+        }).join("");
 
 }
 
 
 // =============================================
-// SUBMIT NODE TO SUPABASE
+// REGISTER NODE
 // =============================================
 
-async function submitNode(event) {
-
-    event.preventDefault();
-
+async function submitNode() {
 
     if (!currentUser) {
 
         alert(
-            "You must be signed in."
+            "Please sign in before registering a Node."
         );
 
         window.location.hash =
@@ -1209,169 +794,366 @@ async function submitNode(event) {
     }
 
 
-    const message =
-        document.getElementById(
-            "node-submit-message"
-        );
-
-
     const name =
-        document.getElementById(
-            "new-node-name"
-        ).value.trim();
-
-
-    const city =
-        document.getElementById(
-            "new-node-city"
-        ).value.trim();
-
-
-    const country =
-        document.getElementById(
-            "new-node-country"
-        ).value.trim();
-
-
-    const continent =
-        document.getElementById(
-            "new-node-continent"
-        ).value;
-
+        getValue("node-name");
 
     const description =
-        document.getElementById(
-            "new-node-description"
-        ).value.trim();
+        getValue("node-description");
 
+    const city =
+        getValue("node-city");
+
+    const country =
+        getValue("node-country");
+
+    const continent =
+        getValue("node-continent");
 
     const discord =
-        document.getElementById(
-            "new-node-discord"
-        ).value.trim();
-
-
-    const telegram =
-        document.getElementById(
-            "new-node-telegram"
-        ).value.trim();
-
+        getValue("node-discord");
 
     const twitter =
-        document.getElementById(
-            "new-node-twitter"
-        ).value.trim();
+        getValue("node-twitter");
+
+    const telegram =
+        getValue("node-telegram");
 
 
-    if (message) {
+    if (
+        !name ||
+        !description ||
+        !city ||
+        !country ||
+        !continent
+    ) {
 
-        message.textContent =
-            "Submitting Node...";
+        alert(
+            "Please complete all required fields."
+        );
+
+        return;
 
     }
 
 
-    try {
-
-        const {
-            data,
-            error
-        } = await db
-            .from("nodes")
-            .insert({
-
-                name:
-                    name,
-
-                city:
-                    city,
-
-                country:
-                    country,
-
-                continent:
-                    continent,
-
-                description:
-                    description,
-
-                discord_url:
-                    discord || null,
-
-                telegram_url:
-                    telegram || null,
-
-                twitter_url:
-                    twitter || null,
-
-                status:
-                    "pending",
-
-                created_by:
-                    currentUser.id
-
-            })
-            .select()
-            .single();
+    const fileInput =
+        document.getElementById(
+            "node-logo"
+        );
 
 
-        if (error) {
+    let logoURL = "";
 
-            console.error(
-                "Node submission error:",
-                error
+
+    // =============================================
+    // UPLOAD LOGO
+    // =============================================
+
+    if (
+        fileInput &&
+        fileInput.files &&
+        fileInput.files.length
+    ) {
+
+        const file =
+            fileInput.files[0];
+
+
+        if (
+            !file.type.startsWith(
+                "image/"
+            )
+        ) {
+
+            alert(
+                "Please select an image file."
             );
-
-
-            if (message) {
-
-                message.textContent =
-                    error.message;
-
-            }
 
             return;
 
         }
 
 
-        console.log(
-            "Node created:",
-            data
-        );
+        const maxSize =
+            5 * 1024 * 1024;
 
 
-        if (message) {
+        if (file.size > maxSize) {
 
-            message.textContent =
-                "Node submitted successfully. It is now waiting for review.";
+            alert(
+                "The image must be smaller than 5 MB."
+            );
+
+            return;
 
         }
 
 
-        document
-            .getElementById(
-                "dynamic-node-form"
-            )
-            .reset();
+        const extension =
+            file.name
+                .split(".")
+                .pop()
+                .toLowerCase();
 
+
+        const fileName =
+            `${currentUser.id}/${Date.now()}-${crypto.randomUUID()}.${extension}`;
+
+
+        const {
+            error: uploadError
+        } = await db.storage
+            .from("node-images")
+            .upload(
+                fileName,
+                file,
+                {
+                    cacheControl:
+                        "3600",
+
+                    upsert:
+                        false,
+
+                    contentType:
+                        file.type
+
+                }
+            );
+
+
+        if (uploadError) {
+
+            console.error(
+                "Image upload error:",
+                uploadError
+            );
+
+            alert(
+                "Unable to upload the Node logo: " +
+                uploadError.message
+            );
+
+            return;
+
+        }
+
+
+        const {
+            data: publicData
+        } = db.storage
+            .from("node-images")
+            .getPublicUrl(
+                fileName
+            );
+
+
+        logoURL =
+            publicData.publicUrl;
 
     }
 
-    catch (error) {
+
+    // =============================================
+    // INSERT NODE
+    // =============================================
+
+    const {
+        data,
+        error
+    } = await db
+        .from("nodes")
+        .insert({
+
+            owner_id:
+                currentUser.id,
+
+            name:
+                name,
+
+            description:
+                description,
+
+            city:
+                city,
+
+            country:
+                country,
+
+            continent:
+                continent,
+
+            logo_url:
+                logoURL,
+
+            discord_url:
+                discord || null,
+
+            twitter_url:
+                twitter || null,
+
+            telegram_url:
+                telegram || null,
+
+            status:
+                "pending"
+
+        })
+        .select()
+        .single();
+
+
+    if (error) {
 
         console.error(
-            "Unexpected submission error:",
+            "Node registration error:",
             error
         );
 
+        alert(
+            "Unable to register the Node: " +
+            error.message
+        );
 
-        if (message) {
+        return;
 
-            message.textContent =
-                "Unable to submit your Node.";
+    }
+
+
+    console.log(
+        "Node created:",
+        data
+    );
+
+
+    alert(
+        "Node submitted successfully. It is now waiting for review."
+    );
+
+
+    clearNodeForm();
+
+    await loadMyNodes();
+
+    window.location.hash =
+        "dashboard";
+
+}
+
+
+// =============================================
+// NODE FORM EVENTS
+// =============================================
+
+function setupNodeForm() {
+
+    const form =
+        document.getElementById(
+            "node-form"
+        );
+
+
+    if (!form) {
+        return;
+    }
+
+
+    form.addEventListener(
+        "submit",
+        event => {
+
+            event.preventDefault();
+
+            submitNode();
 
         }
+    );
+
+
+    const fileInput =
+        document.getElementById(
+            "node-logo"
+        );
+
+
+    const preview =
+        document.getElementById(
+            "node-logo-preview"
+        );
+
+
+    if (
+        fileInput &&
+        preview
+    ) {
+
+        fileInput.addEventListener(
+            "change",
+            () => {
+
+                const file =
+                    fileInput.files[0];
+
+
+                if (!file) {
+
+                    preview.innerHTML =
+                        "";
+
+                    return;
+
+                }
+
+
+                if (
+                    !file.type.startsWith(
+                        "image/"
+                    )
+                ) {
+
+                    alert(
+                        "Please select an image file."
+                    );
+
+                    fileInput.value =
+                        "";
+
+                    preview.innerHTML =
+                        "";
+
+                    return;
+
+                }
+
+
+                const reader =
+                    new FileReader();
+
+
+                reader.onload =
+                    event => {
+
+                        preview.innerHTML = `
+                            <img
+                                src="${event.target.result}"
+                                alt="Node logo preview"
+                                style="
+                                    max-width:180px;
+                                    max-height:180px;
+                                    object-fit:contain;
+                                    border-radius:12px;
+                                "
+                            >
+                        `;
+
+                    };
+
+
+                reader.readAsDataURL(
+                    file
+                );
+
+            }
+        );
 
     }
 
@@ -1379,33 +1161,34 @@ async function submitNode(event) {
 
 
 // =============================================
-// REMOVE DYNAMIC SECTIONS
+// CLEAR NODE FORM
 // =============================================
 
-function removeDynamicSections() {
+function clearNodeForm() {
 
-    const dashboard =
+    const form =
         document.getElementById(
-            "dynamic-dashboard"
+            "node-form"
         );
 
 
-    const submit =
-        document.getElementById(
-            "dynamic-submit"
-        );
+    if (form) {
 
-
-    if (dashboard) {
-
-        dashboard.remove();
+        form.reset();
 
     }
 
 
-    if (submit) {
+    const preview =
+        document.getElementById(
+            "node-logo-preview"
+        );
 
-        submit.remove();
+
+    if (preview) {
+
+        preview.innerHTML =
+            "";
 
     }
 
@@ -1455,7 +1238,6 @@ async function loadNodes() {
         nodes =
             data || [];
 
-
         renderNodes(nodes);
 
     }
@@ -1481,9 +1263,7 @@ async function loadNodes() {
 function renderNodes(list) {
 
     if (!nodeGrid) {
-
         return;
-
     }
 
 
@@ -1512,15 +1292,14 @@ function renderNodes(list) {
     }
 
 
-    list.forEach(
-        node => {
+    list.forEach(node => {
 
-            nodeGrid.appendChild(
-                createNodeCard(node)
-            );
+        const card =
+            createNodeCard(node);
 
-        }
-    );
+        nodeGrid.appendChild(card);
+
+    });
 
 }
 
@@ -1600,6 +1379,7 @@ function createNodeCard(node) {
 
             ${
                 node.description
+
                     ? `
                         <p class="node-description">
                             ${escapeHTML(
@@ -1607,6 +1387,7 @@ function createNodeCard(node) {
                             )}
                         </p>
                     `
+
                     : ""
             }
 
@@ -1614,6 +1395,7 @@ function createNodeCard(node) {
 
                 ${
                     node.discord_url
+
                         ? `
                             <a
                                 href="${safeURL(
@@ -1625,11 +1407,13 @@ function createNodeCard(node) {
                                 Discord
                             </a>
                         `
+
                         : ""
                 }
 
                 ${
                     node.telegram_url
+
                         ? `
                             <a
                                 href="${safeURL(
@@ -1641,11 +1425,13 @@ function createNodeCard(node) {
                                 Telegram
                             </a>
                         `
+
                         : ""
                 }
 
                 ${
                     node.twitter_url
+
                         ? `
                             <a
                                 href="${safeURL(
@@ -1657,6 +1443,7 @@ function createNodeCard(node) {
                                 X / Twitter
                             </a>
                         `
+
                         : ""
                 }
 
@@ -1687,9 +1474,7 @@ function createNodeCard(node) {
 function showEmptyDirectory() {
 
     if (!nodeGrid) {
-
         return;
-
     }
 
 
@@ -1723,9 +1508,6 @@ function showEmptyDirectory() {
     `;
 
 
-    updateSubmitLinks();
-
-
     if (nodeCount) {
 
         nodeCount.textContent =
@@ -1743,9 +1525,7 @@ function showEmptyDirectory() {
 function setupSearch() {
 
     if (!searchInput) {
-
         return;
-
     }
 
 
@@ -1775,55 +1555,60 @@ function filterNodes() {
 
     const search =
         searchInput
+
             ? searchInput.value
                 .trim()
                 .toLowerCase()
+
             : "";
 
 
     const continent =
         continentFilter
+
             ? continentFilter.value
+
             : "";
 
 
     const filtered =
-        nodes.filter(
-            node => {
+        nodes.filter(node => {
 
-                const text = [
+            const text = [
 
-                    node.name,
+                node.name,
 
-                    node.city,
+                node.city,
 
-                    node.country,
+                node.country,
 
-                    node.description
+                node.description
 
-                ]
-                    .filter(Boolean)
-                    .join(" ")
-                    .toLowerCase();
+            ]
 
+                .filter(Boolean)
 
-                const matchesSearch =
-                    !search ||
-                    text.includes(search);
+                .join(" ")
+
+                .toLowerCase();
 
 
-                const matchesContinent =
-                    !continent ||
-                    node.continent === continent;
+            const matchesSearch =
+                !search ||
+                text.includes(search);
 
 
-                return (
-                    matchesSearch &&
-                    matchesContinent
-                );
+            const matchesContinent =
+                !continent ||
+                node.continent === continent;
 
-            }
-        );
+
+            return (
+                matchesSearch &&
+                matchesContinent
+            );
+
+        });
 
 
     renderNodes(filtered);
@@ -1844,9 +1629,7 @@ function setupLanguage() {
 
 
     if (!selector) {
-
         return;
-
     }
 
 
@@ -1854,10 +1637,23 @@ function setupLanguage() {
         "change",
         () => {
 
+            const language =
+                selector.value;
+
+
             localStorage.setItem(
                 "nodehub-language",
-                selector.value
+                language
             );
+
+
+            if (language === "pt-BR") {
+
+                alert(
+                    "Português (BR) translation will be activated in the next development stage."
+                );
+
+            }
 
         }
     );
@@ -1880,7 +1676,27 @@ function setupLanguage() {
 
 
 // =============================================
-// HTML SECURITY
+// GET VALUE
+// =============================================
+
+function getValue(id) {
+
+    const element =
+        document.getElementById(id);
+
+
+    if (!element) {
+        return "";
+    }
+
+
+    return element.value.trim();
+
+}
+
+
+// =============================================
+// SECURITY HELPERS
 // =============================================
 
 function escapeHTML(value) {
@@ -1926,7 +1742,7 @@ function escapeHTML(value) {
 
 
 // =============================================
-// SAFE URL
+// URL VALIDATION
 // =============================================
 
 function safeURL(url) {
@@ -1963,3 +1779,20 @@ function safeURL(url) {
     return "#";
 
 }
+
+
+// =============================================
+// START NODE FORM
+// =============================================
+
+setTimeout(
+    () => {
+
+        setupNodeForm();
+
+        updateDashboard();
+
+    },
+    300
+);
+```

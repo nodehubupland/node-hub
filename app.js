@@ -1,6 +1,6 @@
 // =============================================
 // NODE HUB
-// Supabase + Frontend
+// Supabase + Frontend + Authentication
 // =============================================
 
 const SUPABASE_URL =
@@ -27,6 +27,7 @@ const db = createClient(
 // =============================================
 
 let nodes = [];
+let currentUser = null;
 
 
 // =============================================
@@ -54,18 +55,514 @@ document.addEventListener(
     "DOMContentLoaded",
     async () => {
 
+        await initializeAuth();
+
         await loadNodes();
 
         setupSearch();
 
         setupLanguage();
 
+        setupAuthForms();
+
+        setupLogout();
+
     }
 );
 
 
 // =============================================
-// LOAD NODES
+// AUTHENTICATION
+// =============================================
+
+async function initializeAuth() {
+
+    try {
+
+        const {
+            data,
+            error
+        } = await db.auth.getSession();
+
+        if (error) {
+
+            console.error(
+                "Session error:",
+                error
+            );
+
+            return;
+
+        }
+
+        currentUser =
+            data.session
+                ? data.session.user
+                : null;
+
+        updateAuthUI();
+
+        db.auth.onAuthStateChange(
+            async (event, session) => {
+
+                currentUser =
+                    session
+                        ? session.user
+                        : null;
+
+                updateAuthUI();
+
+            }
+        );
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Authentication error:",
+            error
+        );
+
+    }
+
+}
+
+
+// =============================================
+// AUTH UI
+// =============================================
+
+function updateAuthUI() {
+
+    const signInLinks =
+        document.querySelectorAll(
+            'a[href="#login"]'
+        );
+
+    signInLinks.forEach(link => {
+
+        if (currentUser) {
+
+            link.textContent =
+                "Dashboard";
+
+        } else {
+
+            link.textContent =
+                "Sign in";
+
+        }
+
+    });
+
+
+    const accountStatus =
+        document.getElementById(
+            "account-status"
+        );
+
+    if (accountStatus) {
+
+        if (currentUser) {
+
+            accountStatus.textContent =
+                currentUser.email || "Signed in";
+
+        } else {
+
+            accountStatus.textContent =
+                "Not signed in";
+
+        }
+
+    }
+
+}
+
+
+// =============================================
+// SIGN UP
+// =============================================
+
+async function signUp() {
+
+    const emailInput =
+        document.getElementById(
+            "signup-email"
+        );
+
+    const passwordInput =
+        document.getElementById(
+            "signup-password"
+        );
+
+    const usernameInput =
+        document.getElementById(
+            "signup-username"
+        );
+
+
+    if (!emailInput || !passwordInput) {
+
+        alert(
+            "Registration form not found."
+        );
+
+        return;
+
+    }
+
+
+    const email =
+        emailInput.value.trim();
+
+    const password =
+        passwordInput.value;
+
+    const username =
+        usernameInput
+            ? usernameInput.value.trim()
+            : "";
+
+
+    if (!email || !password) {
+
+        alert(
+            "Please enter your email and password."
+        );
+
+        return;
+
+    }
+
+
+    if (password.length < 8) {
+
+        alert(
+            "Password must contain at least 8 characters."
+        );
+
+        return;
+
+    }
+
+
+    try {
+
+        const {
+            data,
+            error
+        } = await db.auth.signUp({
+
+            email: email,
+
+            password: password,
+
+            options: {
+
+                emailRedirectTo:
+                    "https://nodehubupland.github.io/node-hub/",
+
+                data: {
+
+                    username:
+                        username
+
+                }
+
+            }
+
+        });
+
+
+        if (error) {
+
+            console.error(
+                "Sign up error:",
+                error
+            );
+
+            alert(
+                error.message
+            );
+
+            return;
+
+        }
+
+
+        if (data.user) {
+
+            alert(
+                "Account created. Please check your email to confirm your account."
+            );
+
+        }
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Unexpected sign up error:",
+            error
+        );
+
+        alert(
+            "Unable to create your account."
+        );
+
+    }
+
+}
+
+
+// =============================================
+// SIGN IN
+// =============================================
+
+async function signIn() {
+
+    const emailInput =
+        document.getElementById(
+            "login-email"
+        );
+
+    const passwordInput =
+        document.getElementById(
+            "login-password"
+        );
+
+
+    if (!emailInput || !passwordInput) {
+
+        alert(
+            "Login form not found."
+        );
+
+        return;
+
+    }
+
+
+    const email =
+        emailInput.value.trim();
+
+    const password =
+        passwordInput.value;
+
+
+    if (!email || !password) {
+
+        alert(
+            "Please enter your email and password."
+        );
+
+        return;
+
+    }
+
+
+    try {
+
+        const {
+            data,
+            error
+        } = await db.auth.signInWithPassword({
+
+            email: email,
+
+            password: password
+
+        });
+
+
+        if (error) {
+
+            console.error(
+                "Login error:",
+                error
+            );
+
+            alert(
+                error.message
+            );
+
+            return;
+
+        }
+
+
+        currentUser =
+            data.user;
+
+        updateAuthUI();
+
+        alert(
+            "Welcome to Node Hub."
+        );
+
+
+        window.location.hash =
+            "dashboard";
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Unexpected login error:",
+            error
+        );
+
+        alert(
+            "Unable to sign in."
+        );
+
+    }
+
+}
+
+
+// =============================================
+// LOGOUT
+// =============================================
+
+async function signOut() {
+
+    try {
+
+        const {
+            error
+        } = await db.auth.signOut();
+
+
+        if (error) {
+
+            console.error(
+                "Logout error:",
+                error
+            );
+
+            alert(
+                error.message
+            );
+
+            return;
+
+        }
+
+
+        currentUser = null;
+
+        updateAuthUI();
+
+        window.location.hash =
+            "home";
+
+
+        alert(
+            "You have been signed out."
+        );
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Unexpected logout error:",
+            error
+        );
+
+    }
+
+}
+
+
+// =============================================
+// AUTH FORM EVENTS
+// =============================================
+
+function setupAuthForms() {
+
+    const signupForm =
+        document.getElementById(
+            "signup-form"
+        );
+
+    const loginForm =
+        document.getElementById(
+            "login-form"
+        );
+
+
+    if (signupForm) {
+
+        signupForm.addEventListener(
+            "submit",
+            event => {
+
+                event.preventDefault();
+
+                signUp();
+
+            }
+        );
+
+    }
+
+
+    if (loginForm) {
+
+        loginForm.addEventListener(
+            "submit",
+            event => {
+
+                event.preventDefault();
+
+                signIn();
+
+            }
+        );
+
+    }
+
+}
+
+
+// =============================================
+// LOGOUT EVENT
+// =============================================
+
+function setupLogout() {
+
+    const logoutButtons =
+        document.querySelectorAll(
+            "[data-action='logout']"
+        );
+
+
+    logoutButtons.forEach(button => {
+
+        button.addEventListener(
+            "click",
+            event => {
+
+                event.preventDefault();
+
+                signOut();
+
+            }
+        );
+
+    });
+
+}
+
+
+// =============================================
+// LOAD APPROVED NODES
 // =============================================
 
 async function loadNodes() {
@@ -79,9 +576,12 @@ async function loadNodes() {
             .from("nodes")
             .select("*")
             .eq("status", "approved")
-            .order("created_at", {
-                ascending: false
-            });
+            .order(
+                "created_at",
+                {
+                    ascending: false
+                }
+            );
 
 
         if (error) {
@@ -98,7 +598,8 @@ async function loadNodes() {
         }
 
 
-        nodes = data || [];
+        nodes =
+            data || [];
 
         renderNodes(nodes);
 
@@ -124,11 +625,25 @@ async function loadNodes() {
 
 function renderNodes(list) {
 
-    nodeGrid.innerHTML = "";
+    if (!nodeGrid) {
+        return;
+    }
 
 
-    nodeCount.textContent =
-        `${list.length} ${list.length === 1 ? "Node" : "Nodes"}`;
+    nodeGrid.innerHTML =
+        "";
+
+
+    if (nodeCount) {
+
+        nodeCount.textContent =
+            `${list.length} ${
+                list.length === 1
+                    ? "Node"
+                    : "Nodes"
+            }`;
+
+    }
 
 
     if (!list.length) {
@@ -159,7 +674,9 @@ function renderNodes(list) {
 function createNodeCard(node) {
 
     const article =
-        document.createElement("article");
+        document.createElement(
+            "article"
+        );
 
 
     article.className =
@@ -167,44 +684,45 @@ function createNodeCard(node) {
 
 
     const logo =
-        node.logo_url ||
-        "";
+        node.logo_url || "";
 
 
-    const imageHTML = logo
+    const imageHTML =
+        logo
 
-        ? `
-            <div class="node-card-image">
+            ? `
+                <div class="node-card-image">
 
-                <img
-                    src="${escapeHTML(logo)}"
-                    alt="${escapeHTML(node.name || "Node")}"
-                    loading="lazy"
-                >
+                    <img
+                        src="${escapeHTML(logo)}"
+                        alt="${escapeHTML(
+                            node.name || "Node"
+                        )}"
+                        loading="lazy"
+                    >
 
-            </div>
-        `
+                </div>
+            `
 
-        : `
-            <div class="node-card-image node-card-placeholder">
-                ●
-            </div>
-        `;
+            : `
+                <div class="node-card-image node-card-placeholder">
+                    ●
+                </div>
+            `;
 
 
     article.innerHTML = `
 
         ${imageHTML}
 
-
         <div class="node-card-content">
 
             <h3>
                 ${escapeHTML(
-                    node.name || "Unnamed Node"
+                    node.name ||
+                    "Unnamed Node"
                 )}
             </h3>
-
 
             <p class="node-location">
 
@@ -214,29 +732,27 @@ function createNodeCard(node) {
 
                 ${
                     node.country
-                        ? `, ${escapeHTML(node.country)}`
+                        ? `, ${escapeHTML(
+                            node.country
+                        )}`
                         : ""
                 }
 
             </p>
-
 
             ${
                 node.description
 
                     ? `
                         <p class="node-description">
-
                             ${escapeHTML(
                                 node.description
                             )}
-
                         </p>
                     `
 
                     : ""
             }
-
 
             <div class="node-links">
 
@@ -245,7 +761,9 @@ function createNodeCard(node) {
 
                         ? `
                             <a
-                                href="${safeURL(node.discord_url)}"
+                                href="${safeURL(
+                                    node.discord_url
+                                )}"
                                 target="_blank"
                                 rel="noopener noreferrer"
                             >
@@ -256,13 +774,14 @@ function createNodeCard(node) {
                         : ""
                 }
 
-
                 ${
                     node.telegram_url
 
                         ? `
                             <a
-                                href="${safeURL(node.telegram_url)}"
+                                href="${safeURL(
+                                    node.telegram_url
+                                )}"
                                 target="_blank"
                                 rel="noopener noreferrer"
                             >
@@ -273,13 +792,14 @@ function createNodeCard(node) {
                         : ""
                 }
 
-
                 ${
                     node.twitter_url
 
                         ? `
                             <a
-                                href="${safeURL(node.twitter_url)}"
+                                href="${safeURL(
+                                    node.twitter_url
+                                )}"
                                 target="_blank"
                                 rel="noopener noreferrer"
                             >
@@ -291,7 +811,6 @@ function createNodeCard(node) {
                 }
 
             </div>
-
 
             <div class="node-card-footer">
 
@@ -317,6 +836,11 @@ function createNodeCard(node) {
 
 function showEmptyDirectory() {
 
+    if (!nodeGrid) {
+        return;
+    }
+
+
     nodeGrid.innerHTML = `
 
         <div class="empty-directory">
@@ -325,18 +849,15 @@ function showEmptyDirectory() {
                 ◉
             </div>
 
-
             <h3>
                 No Nodes listed yet
             </h3>
-
 
             <p>
                 Be one of the first Node
                 administrators to register
                 your Node.
             </p>
-
 
             <a
                 href="#submit"
@@ -350,8 +871,12 @@ function showEmptyDirectory() {
     `;
 
 
-    nodeCount.textContent =
-        "0 Nodes";
+    if (nodeCount) {
+
+        nodeCount.textContent =
+            "0 Nodes";
+
+    }
 
 }
 
@@ -393,15 +918,19 @@ function filterNodes() {
 
     const search =
         searchInput
+
             ? searchInput.value
                 .trim()
                 .toLowerCase()
+
             : "";
 
 
     const continent =
         continentFilter
+
             ? continentFilter.value
+
             : "";
 
 
@@ -419,8 +948,11 @@ function filterNodes() {
                 node.description
 
             ]
+
                 .filter(Boolean)
+
                 .join(" ")
+
                 .toLowerCase();
 
 
@@ -481,7 +1013,7 @@ function setupLanguage() {
             if (language === "pt-BR") {
 
                 alert(
-                    "Português (BR) será ativado na próxima etapa do projeto."
+                    "Português (BR) translation will be activated in the next development stage."
                 );
 
             }
@@ -512,8 +1044,10 @@ function setupLanguage() {
 
 function escapeHTML(value) {
 
-    if (value === null ||
-        value === undefined) {
+    if (
+        value === null ||
+        value === undefined
+    ) {
 
         return "";
 
@@ -521,11 +1055,31 @@ function escapeHTML(value) {
 
 
     return String(value)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
+
+        .replaceAll(
+            "&",
+            "&amp;"
+        )
+
+        .replaceAll(
+            "<",
+            "&lt;"
+        )
+
+        .replaceAll(
+            ">",
+            "&gt;"
+        )
+
+        .replaceAll(
+            '"',
+            "&quot;"
+        )
+
+        .replaceAll(
+            "'",
+            "&#039;"
+        );
 
 }
 

@@ -1,23 +1,17 @@
 // =============================================
 // NODE HUB
-// Supabase + Frontend + Authentication
-// Dashboard + Directory
-// =============================================
-
-
-// =============================================
-// SUPABASE CONFIG
+// Supabase + Authentication + Dashboard
 // =============================================
 
 const SUPABASE_URL =
     "https://ynqtzyzxspoxssjrjeve.supabase.co";
 
 const SUPABASE_KEY =
-    "sb_publishable_FoDbr9qVeeIYfzEZNNN9Q_53aHxI2g";
+    "sb_publishable_FoDbr9qgVeeIYfzEZNNN9Q_53aHxI2g";
 
 
 // =============================================
-// SUPABASE CLIENT
+// SUPABASE
 // =============================================
 
 const { createClient } = supabase;
@@ -37,7 +31,7 @@ let currentUser = null;
 
 
 // =============================================
-// DOM REFERENCES
+// DOM
 // =============================================
 
 let nodeGrid;
@@ -47,28 +41,39 @@ let continentFilter;
 
 
 // =============================================
-// INITIALIZE
+// START
 // =============================================
 
 document.addEventListener(
     "DOMContentLoaded",
     async () => {
 
-        cacheDOM();
+        nodeGrid =
+            document.getElementById("node-grid");
 
-        setupLanguage();
+        nodeCount =
+            document.getElementById("node-count");
+
+        searchInput =
+            document.getElementById("node-search");
+
+        continentFilter =
+            document.getElementById("continent-filter");
+
+
+        await initializeAuth();
+
+        await loadNodes();
 
         setupSearch();
+
+        setupLanguage();
 
         setupAuthForms();
 
         setupLogout();
 
         setupNavigation();
-
-        await initializeAuth();
-
-        await loadNodes();
 
         handleRoute();
 
@@ -77,36 +82,7 @@ document.addEventListener(
 
 
 // =============================================
-// CACHE DOM
-// =============================================
-
-function cacheDOM() {
-
-    nodeGrid =
-        document.getElementById(
-            "node-grid"
-        );
-
-    nodeCount =
-        document.getElementById(
-            "node-count"
-        );
-
-    searchInput =
-        document.getElementById(
-            "node-search"
-        );
-
-    continentFilter =
-        document.getElementById(
-            "continent-filter"
-        );
-
-}
-
-
-// =============================================
-// AUTHENTICATION
+// AUTH
 // =============================================
 
 async function initializeAuth() {
@@ -125,10 +101,6 @@ async function initializeAuth() {
                 "Session error:",
                 error
             );
-
-            currentUser = null;
-
-            updateAuthUI();
 
             return;
 
@@ -157,9 +129,11 @@ async function initializeAuth() {
 
 
                 if (
-                    event === "SIGNED_IN" &&
-                    session
+                    event === "SIGNED_IN"
                 ) {
+
+                    window.location.hash =
+                        "dashboard";
 
                     handleRoute();
 
@@ -170,7 +144,10 @@ async function initializeAuth() {
                     event === "SIGNED_OUT"
                 ) {
 
-                    showHome();
+                    window.location.hash =
+                        "home";
+
+                    handleRoute();
 
                 }
 
@@ -185,10 +162,6 @@ async function initializeAuth() {
             "Authentication error:",
             error
         );
-
-        currentUser = null;
-
-        updateAuthUI();
 
     }
 
@@ -207,52 +180,27 @@ function updateAuthUI() {
         );
 
 
-    signInLinks.forEach(
-        link => {
+    signInLinks.forEach(link => {
 
-            const text =
-                link.querySelector(
-                    "#auth-nav-text"
-                );
+        if (currentUser) {
 
+            link.textContent =
+                "Dashboard";
 
-            if (text) {
+            link.href =
+                "#dashboard";
 
-                text.textContent =
-                    currentUser
-                        ? "Dashboard"
-                        : "Sign in";
+        } else {
 
-            }
-            else {
+            link.textContent =
+                "Sign in";
 
-                link.textContent =
-                    currentUser
-                        ? "Dashboard"
-                        : "Sign in";
-
-            }
-
-
-            if (currentUser) {
-
-                link.setAttribute(
-                    "href",
-                    "#dashboard"
-                );
-
-            }
-            else {
-
-                link.setAttribute(
-                    "href",
-                    "#login"
-                );
-
-            }
+            link.href =
+                "#login";
 
         }
-    );
+
+    });
 
 
     const accountStatus =
@@ -266,12 +214,10 @@ function updateAuthUI() {
         if (currentUser) {
 
             accountStatus.textContent =
-                `Signed in as ${
-                    currentUser.email || "User"
-                }`;
+                currentUser.email ||
+                "Signed in";
 
-        }
-        else {
+        } else {
 
             accountStatus.textContent =
                 "Not signed in";
@@ -279,6 +225,50 @@ function updateAuthUI() {
         }
 
     }
+
+
+    updateSubmitLinks();
+
+}
+
+
+// =============================================
+// SUBMIT NODE LINKS
+// =============================================
+
+function updateSubmitLinks() {
+
+    const submitLinks =
+        document.querySelectorAll(
+            'a[href="#submit"]'
+        );
+
+
+    submitLinks.forEach(link => {
+
+        link.onclick = function(event) {
+
+            event.preventDefault();
+
+
+            if (currentUser) {
+
+                window.location.hash =
+                    "submit";
+
+            } else {
+
+                window.location.hash =
+                    "login";
+
+            }
+
+
+            handleRoute();
+
+        };
+
+    });
 
 }
 
@@ -331,10 +321,7 @@ async function signUp() {
             : "";
 
 
-    if (
-        !email ||
-        !password
-    ) {
+    if (!email || !password) {
 
         alert(
             "Please enter your email and password."
@@ -345,9 +332,7 @@ async function signUp() {
     }
 
 
-    if (
-        password.length < 8
-    ) {
+    if (password.length < 8) {
 
         alert(
             "Password must contain at least 8 characters."
@@ -372,7 +357,7 @@ async function signUp() {
             options: {
 
                 emailRedirectTo:
-                    "https://nodehubupland.github.io/node-hub/",
+                    "https://nodehubupland.github.io/node-hub/#dashboard",
 
                 data: {
 
@@ -402,24 +387,31 @@ async function signUp() {
         }
 
 
-        if (data.user) {
+        if (
+            data.user &&
+            !data.session
+        ) {
 
             alert(
-                "Account created. Please check your email to confirm your account."
+                "Account created successfully. Check your email to confirm your account."
             );
 
-            emailInput.value =
-                "";
+            return;
 
-            passwordInput.value =
-                "";
+        }
 
-            if (usernameInput) {
 
-                usernameInput.value =
-                    "";
+        if (data.session) {
 
-            }
+            currentUser =
+                data.session.user;
+
+            updateAuthUI();
+
+            window.location.hash =
+                "dashboard";
+
+            handleRoute();
 
         }
 
@@ -479,10 +471,7 @@ async function signIn() {
         passwordInput.value;
 
 
-    if (
-        !email ||
-        !password
-    ) {
+    if (!email || !password) {
 
         alert(
             "Please enter your email and password."
@@ -532,13 +521,11 @@ async function signIn() {
         updateAuthUI();
 
 
-        alert(
-            "Welcome to Node Hub."
-        );
-
-
         window.location.hash =
             "dashboard";
+
+
+        handleRoute();
 
     }
 
@@ -598,9 +585,7 @@ async function signOut() {
             "home";
 
 
-        alert(
-            "You have been signed out."
-        );
+        handleRoute();
 
     }
 
@@ -617,7 +602,7 @@ async function signOut() {
 
 
 // =============================================
-// AUTH FORM EVENTS
+// AUTH FORMS
 // =============================================
 
 function setupAuthForms() {
@@ -668,33 +653,31 @@ function setupAuthForms() {
 
 
 // =============================================
-// LOGOUT EVENTS
+// LOGOUT BUTTONS
 // =============================================
 
 function setupLogout() {
 
-    const logoutButtons =
+    const buttons =
         document.querySelectorAll(
             "[data-action='logout']"
         );
 
 
-    logoutButtons.forEach(
-        button => {
+    buttons.forEach(button => {
 
-            button.addEventListener(
-                "click",
-                event => {
+        button.addEventListener(
+            "click",
+            event => {
 
-                    event.preventDefault();
+                event.preventDefault();
 
-                    signOut();
+                signOut();
 
-                }
-            );
+            }
+        );
 
-        }
-    );
+    });
 
 }
 
@@ -711,36 +694,27 @@ function setupNavigation() {
     );
 
 
-    document.addEventListener(
-        "click",
-        event => {
-
-            const link =
-                event.target.closest(
-                    'a[href="#dashboard"]'
-                );
+    const links =
+        document.querySelectorAll(
+            "a[href^='#']"
+        );
 
 
-            if (!link) {
-                return;
-            }
+    links.forEach(link => {
 
+        link.addEventListener(
+            "click",
+            () => {
 
-            if (!currentUser) {
-
-                event.preventDefault();
-
-                window.location.hash =
-                    "login";
-
-                alert(
-                    "Please sign in to access your dashboard."
+                setTimeout(
+                    handleRoute,
+                    50
                 );
 
             }
+        );
 
-        }
-    );
+    });
 
 }
 
@@ -753,8 +727,11 @@ function handleRoute() {
 
     const hash =
         window.location.hash
-            .replace("#", "")
-            .trim();
+            .replace(
+                "#",
+                ""
+            )
+            .toLowerCase();
 
 
     if (
@@ -762,8 +739,6 @@ function handleRoute() {
     ) {
 
         if (!currentUser) {
-
-            showHome();
 
             window.location.hash =
                 "login";
@@ -780,120 +755,107 @@ function handleRoute() {
     }
 
 
-    hideDashboard();
+    if (
+        hash === "submit"
+    ) {
 
-}
+        if (!currentUser) {
 
+            window.location.hash =
+                "login";
 
-// =============================================
-// SHOW DASHBOARD
-// =============================================
+            return;
 
-function showDashboard() {
-
-    let dashboard =
-        document.getElementById(
-            "dashboard"
-        );
+        }
 
 
-    if (!dashboard) {
+        showSubmitNode();
 
-        dashboard =
-            createDashboard();
-
-        document
-            .querySelector("main")
-            .appendChild(
-                dashboard
-            );
+        return;
 
     }
 
 
-    dashboard.style.display =
-        "block";
+    if (
+        hash === "login"
+    ) {
+
+        showLoginSection();
+
+        return;
+
+    }
 
 
-    document
-        .querySelectorAll(
-            "main > section:not(#dashboard)"
-        )
-        .forEach(
-            section => {
-
-                section.style.display =
-                    "none";
-
-            }
-        );
-
-
-    renderDashboard();
-
-    window.scrollTo({
-        top: 0,
-        behavior: "smooth"
-    });
+    showNormalSite();
 
 }
 
 
 // =============================================
-// HIDE DASHBOARD
+// NORMAL SITE
 // =============================================
 
-function hideDashboard() {
+function showNormalSite() {
 
     const dashboard =
         document.getElementById(
-            "dashboard"
+            "dynamic-dashboard"
+        );
+
+    const submit =
+        document.getElementById(
+            "dynamic-submit"
         );
 
 
     if (dashboard) {
 
-        dashboard.style.display =
-            "none";
+        dashboard.remove();
 
     }
 
 
-    document
-        .querySelectorAll(
-            "main > section:not(#dashboard)"
-        )
-        .forEach(
-            section => {
+    if (submit) {
 
-                section.style.display =
-                    "";
+        submit.remove();
 
-            }
+    }
+
+}
+
+
+// =============================================
+// LOGIN
+// =============================================
+
+function showLoginSection() {
+
+    const login =
+        document.getElementById(
+            "login"
         );
 
-}
 
+    if (login) {
 
-// =============================================
-// HOME
-// =============================================
+        login.scrollIntoView({
+            behavior: "smooth"
+        });
 
-function showHome() {
-
-    hideDashboard();
-
-    window.location.hash =
-        "home";
+    }
 
 }
 
 
 // =============================================
-// CREATE DASHBOARD
+// DASHBOARD
 // =============================================
 
-function createDashboard() {
+function showDashboard() {
+
+    removeDynamicSections();
+
 
     const section =
         document.createElement(
@@ -902,171 +864,203 @@ function createDashboard() {
 
 
     section.id =
-        "dashboard";
+        "dynamic-dashboard";
+
 
     section.className =
-        "section section-alt";
+        "section dashboard-section";
+
+
+    const email =
+        currentUser.email || "";
 
 
     section.innerHTML = `
 
         <div class="container">
 
-            <div class="section-heading">
+            <div class="dashboard-box">
 
-                <span class="eyebrow">
+                <p class="eyebrow">
                     NODE HUB ACCOUNT
-                </span>
-
-                <h1>
-                    Dashboard
-                </h1>
-
-                <p>
-                    Manage your Node Hub account
-                    and Node submissions.
                 </p>
 
-            </div>
+                <h2>
+                    Welcome to Node Hub
+                </h2>
 
+                <p>
+                    You are signed in and ready to manage your Node.
+                </p>
 
-            <div class="auth-container">
+                <p>
+                    <strong>
+                        ${escapeHTML(email)}
+                    </strong>
+                </p>
 
-                <div class="auth-card">
+                <div class="dashboard-actions">
 
-                    <span class="eyebrow">
-                        ACCOUNT
-                    </span>
-
-                    <h2>
-                        Welcome
-                    </h2>
-
-                    <p id="dashboard-welcome">
-                        Loading account...
-                    </p>
-
-                    <p id="dashboard-email">
-                    </p>
-
-                    <button
-                        type="button"
-                        id="register-node-button"
+                    <a
+                        href="#submit"
                         class="button button-primary"
                     >
                         Register My Node
-                    </button>
+                    </a>
+
+                    <a
+                        href="#nodes"
+                        class="button"
+                    >
+                        Explore Nodes
+                    </a>
 
                     <button
                         type="button"
+                        class="button"
                         data-action="logout"
-                        class="button button-secondary"
                     >
-                        Sign Out
+                        Sign out
                     </button>
-
-                </div>
-
-
-                <div class="auth-card">
-
-                    <span class="eyebrow">
-                        YOUR NODES
-                    </span>
-
-                    <h2>
-                        My Nodes
-                    </h2>
-
-                    <div id="my-nodes">
-
-                        <p>
-                            No Nodes registered yet.
-                        </p>
-
-                    </div>
 
                 </div>
 
             </div>
 
+        </div>
 
-            <div
-                id="register-node-panel"
-                style="display:none;"
-            >
-
-                <div class="auth-card">
-
-                    <span class="eyebrow">
-                        NODE REGISTRATION
-                    </span>
-
-                    <h2>
-                        Register My Node
-                    </h2>
-
-                    <p>
-                        Node registration will be submitted
-                        for review by the Node Hub team.
-                    </p>
+    `;
 
 
-                    <form id="register-node-form">
+    document.body.appendChild(
+        section
+    );
 
-                        <label>
-                            Node Name
-                        </label>
 
+    section.scrollIntoView({
+        behavior: "smooth"
+    });
+
+
+    const logoutButton =
+        section.querySelector(
+            "[data-action='logout']"
+        );
+
+
+    if (logoutButton) {
+
+        logoutButton.addEventListener(
+            "click",
+            signOut
+        );
+
+    }
+
+
+    const submitButton =
+        section.querySelector(
+            'a[href="#submit"]'
+        );
+
+
+    if (submitButton) {
+
+        submitButton.addEventListener(
+            "click",
+            event => {
+
+                event.preventDefault();
+
+                window.location.hash =
+                    "submit";
+
+                handleRoute();
+
+            }
+        );
+
+    }
+
+}
+
+
+// =============================================
+// SUBMIT NODE
+// =============================================
+
+function showSubmitNode() {
+
+    removeDynamicSections();
+
+
+    const section =
+        document.createElement(
+            "section"
+        );
+
+
+    section.id =
+        "dynamic-submit";
+
+
+    section.className =
+        "section submit-section";
+
+
+    section.innerHTML = `
+
+        <div class="container">
+
+            <div class="dashboard-box">
+
+                <p class="eyebrow">
+                    NODE REGISTRATION
+                </p>
+
+                <h2>
+                    Register Your Node
+                </h2>
+
+                <p>
+                    Submit your Node for review by the Node Hub team.
+                </p>
+
+                <form id="dynamic-node-form">
+
+                    <label>
+                        Node Name
                         <input
                             type="text"
-                            id="node-name"
+                            id="new-node-name"
                             required
-                            placeholder="Your Node name"
                         >
+                    </label>
 
-
-                        <label>
-                            Description
-                        </label>
-
-                        <textarea
-                            id="node-description"
-                            rows="5"
-                            placeholder="Tell us about your Node"
-                        ></textarea>
-
-
-                        <label>
-                            City
-                        </label>
-
+                    <label>
+                        City
                         <input
                             type="text"
-                            id="node-city"
-                            placeholder="City"
+                            id="new-node-city"
+                            required
                         >
+                    </label>
 
-
-                        <label>
-                            Country
-                        </label>
-
+                    <label>
+                        Country
                         <input
                             type="text"
-                            id="node-country"
-                            placeholder="Country"
+                            id="new-node-country"
+                            required
                         >
+                    </label>
 
-
-                        <label>
-                            Continent
-                        </label>
-
+                    <label>
+                        Continent
                         <select
-                            id="node-continent"
+                            id="new-node-continent"
+                            required
                         >
-
                             <option value="">
                                 Select continent
                             </option>
@@ -1096,86 +1090,66 @@ function createDashboard() {
                             </option>
 
                         </select>
+                    </label>
 
+                    <label>
+                        Description
+                        <textarea
+                            id="new-node-description"
+                            rows="5"
+                        ></textarea>
+                    </label>
 
-                        <label>
-                            Logo URL
-                        </label>
-
+                    <label>
+                        Discord URL
                         <input
                             type="url"
-                            id="node-logo"
-                            placeholder="https://..."
-                        >
-
-
-                        <label>
-                            Discord
-                        </label>
-
-                        <input
-                            type="url"
-                            id="node-discord"
+                            id="new-node-discord"
                             placeholder="https://discord.gg/..."
                         >
+                    </label>
 
-
-                        <label>
-                            X / Twitter
-                        </label>
-
+                    <label>
+                        Telegram URL
                         <input
                             type="url"
-                            id="node-twitter"
-                            placeholder="https://x.com/..."
-                        >
-
-
-                        <label>
-                            Telegram
-                        </label>
-
-                        <input
-                            type="url"
-                            id="node-telegram"
+                            id="new-node-telegram"
                             placeholder="https://t.me/..."
                         >
+                    </label>
 
+                    <label>
+                        X / Twitter URL
+                        <input
+                            type="url"
+                            id="new-node-twitter"
+                            placeholder="https://x.com/..."
+                        >
+                    </label>
 
-                        <div style="margin-top:20px;">
+                    <div class="dashboard-actions">
 
-                            <button
-                                type="submit"
-                                class="button button-primary"
-                            >
-                                Submit Node for Review
-                            </button>
+                        <button
+                            type="submit"
+                            class="button button-primary"
+                        >
+                            Submit Node
+                        </button>
 
-                            <button
-                                type="button"
-                                id="cancel-register-node"
-                                class="button button-secondary"
-                            >
-                                Cancel
-                            </button>
+                        <a
+                            href="#dashboard"
+                            class="button"
+                        >
+                            Back to Dashboard
+                        </a>
 
-                        </div>
+                    </div>
 
-                    </form>
+                </form>
 
-                </div>
-
-            </div>
-
-
-            <div style="margin-top:30px;">
-
-                <a
-                    href="#home"
-                    class="button button-secondary"
-                >
-                    Back to Directory
-                </a>
+                <div
+                    id="node-submit-message"
+                ></div>
 
             </div>
 
@@ -1184,343 +1158,28 @@ function createDashboard() {
     `;
 
 
-    return section;
-
-}
-
-
-// =============================================
-// RENDER DASHBOARD
-// =============================================
-
-function renderDashboard() {
-
-    if (!currentUser) {
-        return;
-    }
-
-
-    const welcome =
-        document.getElementById(
-            "dashboard-welcome"
-        );
-
-    const email =
-        document.getElementById(
-            "dashboard-email"
-        );
-
-
-    const username =
-        currentUser.user_metadata
-            ?.username ||
-        "Node Hub Member";
-
-
-    if (welcome) {
-
-        welcome.textContent =
-            `Welcome, ${username}`;
-
-    }
-
-
-    if (email) {
-
-        email.textContent =
-            currentUser.email || "";
-
-    }
-
-
-    const logoutButtons =
-        document.querySelectorAll(
-            "#dashboard [data-action='logout']"
-        );
-
-
-    logoutButtons.forEach(
-        button => {
-
-            button.onclick =
-                event => {
-
-                    event.preventDefault();
-
-                    signOut();
-
-                };
-
-        }
+    document.body.appendChild(
+        section
     );
 
 
-    const registerButton =
+    section.scrollIntoView({
+        behavior: "smooth"
+    });
+
+
+    const form =
         document.getElementById(
-            "register-node-button"
+            "dynamic-node-form"
         );
 
 
-    const registerPanel =
-        document.getElementById(
-            "register-node-panel"
+    if (form) {
+
+        form.addEventListener(
+            "submit",
+            submitNode
         );
-
-
-    const cancelButton =
-        document.getElementById(
-            "cancel-register-node"
-        );
-
-
-    if (registerButton) {
-
-        registerButton.onclick =
-            () => {
-
-                if (registerPanel) {
-
-                    registerPanel.style.display =
-                        "block";
-
-                }
-
-                registerButton.style.display =
-                    "none";
-
-            };
-
-    }
-
-
-    if (cancelButton) {
-
-        cancelButton.onclick =
-            () => {
-
-                if (registerPanel) {
-
-                    registerPanel.style.display =
-                        "none";
-
-                }
-
-                if (registerButton) {
-
-                    registerButton.style.display =
-                        "inline-flex";
-
-                }
-
-            };
-
-    }
-
-
-    const registerForm =
-        document.getElementById(
-            "register-node-form"
-        );
-
-
-    if (registerForm) {
-
-        registerForm.onsubmit =
-            event => {
-
-                event.preventDefault();
-
-                submitNode();
-
-            };
-
-    }
-
-
-    loadMyNodes();
-
-}
-
-
-// =============================================
-// LOAD USER NODES
-// =============================================
-
-async function loadMyNodes() {
-
-    const container =
-        document.getElementById(
-            "my-nodes"
-        );
-
-
-    if (
-        !container ||
-        !currentUser
-    ) {
-
-        return;
-
-    }
-
-
-    container.innerHTML =
-        "<p>Loading your Nodes...</p>";
-
-
-    try {
-
-        /*
-         * IMPORTANT:
-         * We first try the administrator
-         * relationship using the current
-         * authenticated user.
-         *
-         * If your final database uses another
-         * column name, we will adjust this
-         * when building the full Node Admin system.
-         */
-
-        const {
-            data,
-            error
-        } = await db
-            .from("nodes")
-            .select("*")
-            .eq(
-                "created_by",
-                currentUser.id
-            )
-            .order(
-                "created_at",
-                {
-                    ascending: false
-                }
-            );
-
-
-        if (error) {
-
-            console.warn(
-                "Could not load user Nodes:",
-                error.message
-            );
-
-            container.innerHTML = `
-
-                <p>
-                    No Nodes registered yet.
-                </p>
-
-                <p>
-                    Use "Register My Node" to
-                    submit your first Node.
-                </p>
-
-            `;
-
-            return;
-
-        }
-
-
-        if (!data || !data.length) {
-
-            container.innerHTML = `
-
-                <p>
-                    No Nodes registered yet.
-                </p>
-
-                <p>
-                    Your submitted Nodes will
-                    appear here.
-                </p>
-
-            `;
-
-            return;
-
-        }
-
-
-        container.innerHTML =
-            "";
-
-
-        data.forEach(
-            node => {
-
-                const card =
-                    document.createElement(
-                        "div"
-                    );
-
-
-                card.className =
-                    "about-card";
-
-
-                card.innerHTML = `
-
-                    <h3>
-                        ${escapeHTML(
-                            node.name ||
-                            "Unnamed Node"
-                        )}
-                    </h3>
-
-                    <p>
-                        Status:
-                        <strong>
-                            ${escapeHTML(
-                                node.status ||
-                                "pending"
-                            )}
-                        </strong>
-                    </p>
-
-                    ${
-                        node.city
-                            ? `
-                                <p>
-                                    ${escapeHTML(
-                                        node.city
-                                    )}
-                                    ${
-                                        node.country
-                                            ? `, ${escapeHTML(
-                                                node.country
-                                            )}`
-                                            : ""
-                                    }
-                                </p>
-                            `
-                            : ""
-                    }
-
-                `;
-
-
-                container.appendChild(
-                    card
-                );
-
-            }
-        );
-
-    }
-
-    catch (error) {
-
-        console.error(
-            "Unexpected Node loading error:",
-            error
-        );
-
-
-        container.innerHTML =
-            "<p>No Nodes registered yet.</p>";
 
     }
 
@@ -1528,15 +1187,18 @@ async function loadMyNodes() {
 
 
 // =============================================
-// SUBMIT NODE
+// SUBMIT NODE TO SUPABASE
 // =============================================
 
-async function submitNode() {
+async function submitNode(event) {
+
+    event.preventDefault();
+
 
     if (!currentUser) {
 
         alert(
-            "Please sign in first."
+            "You must be signed in."
         );
 
         window.location.hash =
@@ -1547,67 +1209,64 @@ async function submitNode() {
     }
 
 
+    const message =
+        document.getElementById(
+            "node-submit-message"
+        );
+
+
     const name =
         document.getElementById(
-            "node-name"
-        )?.value.trim();
-
-
-    const description =
-        document.getElementById(
-            "node-description"
-        )?.value.trim();
+            "new-node-name"
+        ).value.trim();
 
 
     const city =
         document.getElementById(
-            "node-city"
-        )?.value.trim();
+            "new-node-city"
+        ).value.trim();
 
 
     const country =
         document.getElementById(
-            "node-country"
-        )?.value.trim();
+            "new-node-country"
+        ).value.trim();
 
 
     const continent =
         document.getElementById(
-            "node-continent"
-        )?.value;
+            "new-node-continent"
+        ).value;
 
 
-    const logo =
+    const description =
         document.getElementById(
-            "node-logo"
-        )?.value.trim();
+            "new-node-description"
+        ).value.trim();
 
 
     const discord =
         document.getElementById(
-            "node-discord"
-        )?.value.trim();
-
-
-    const twitter =
-        document.getElementById(
-            "node-twitter"
-        )?.value.trim();
+            "new-node-discord"
+        ).value.trim();
 
 
     const telegram =
         document.getElementById(
-            "node-telegram"
-        )?.value.trim();
+            "new-node-telegram"
+        ).value.trim();
 
 
-    if (!name) {
+    const twitter =
+        document.getElementById(
+            "new-node-twitter"
+        ).value.trim();
 
-        alert(
-            "Please enter your Node name."
-        );
 
-        return;
+    if (message) {
+
+        message.textContent =
+            "Submitting Node...";
 
     }
 
@@ -1615,6 +1274,7 @@ async function submitNode() {
     try {
 
         const {
+            data,
             error
         } = await db
             .from("nodes")
@@ -1623,29 +1283,26 @@ async function submitNode() {
                 name:
                     name,
 
-                description:
-                    description || null,
-
                 city:
-                    city || null,
+                    city,
 
                 country:
-                    country || null,
+                    country,
 
                 continent:
-                    continent || null,
+                    continent,
 
-                logo_url:
-                    logo || null,
+                description:
+                    description,
 
                 discord_url:
                     discord || null,
 
-                twitter_url:
-                    twitter || null,
-
                 telegram_url:
                     telegram || null,
+
+                twitter_url:
+                    twitter || null,
 
                 status:
                     "pending",
@@ -1653,7 +1310,9 @@ async function submitNode() {
                 created_by:
                     currentUser.id
 
-            });
+            })
+            .select()
+            .single();
 
 
         if (error) {
@@ -1663,77 +1322,90 @@ async function submitNode() {
                 error
             );
 
-            alert(
-                error.message
-            );
+
+            if (message) {
+
+                message.textContent =
+                    error.message;
+
+            }
 
             return;
 
         }
 
 
-        alert(
-            "Your Node has been submitted for review."
+        console.log(
+            "Node created:",
+            data
         );
 
 
-        const form =
-            document.getElementById(
-                "register-node-form"
-            );
+        if (message) {
 
-
-        if (form) {
-
-            form.reset();
+            message.textContent =
+                "Node submitted successfully. It is now waiting for review.";
 
         }
 
 
-        const panel =
-            document.getElementById(
-                "register-node-panel"
-            );
+        document
+            .getElementById(
+                "dynamic-node-form"
+            )
+            .reset();
 
-
-        const button =
-            document.getElementById(
-                "register-node-button"
-            );
-
-
-        if (panel) {
-
-            panel.style.display =
-                "none";
-
-        }
-
-
-        if (button) {
-
-            button.style.display =
-                "inline-flex";
-
-        }
-
-
-        await loadMyNodes();
-
-        await loadNodes();
 
     }
 
     catch (error) {
 
         console.error(
-            "Unexpected Node submission error:",
+            "Unexpected submission error:",
             error
         );
 
-        alert(
-            "Unable to submit your Node."
+
+        if (message) {
+
+            message.textContent =
+                "Unable to submit your Node.";
+
+        }
+
+    }
+
+}
+
+
+// =============================================
+// REMOVE DYNAMIC SECTIONS
+// =============================================
+
+function removeDynamicSections() {
+
+    const dashboard =
+        document.getElementById(
+            "dynamic-dashboard"
         );
+
+
+    const submit =
+        document.getElementById(
+            "dynamic-submit"
+        );
+
+
+    if (dashboard) {
+
+        dashboard.remove();
+
+    }
+
+
+    if (submit) {
+
+        submit.remove();
 
     }
 
@@ -1784,16 +1456,14 @@ async function loadNodes() {
             data || [];
 
 
-        renderNodes(
-            nodes
-        );
+        renderNodes(nodes);
 
     }
 
     catch (error) {
 
         console.error(
-            "Unexpected Node error:",
+            "Unexpected error:",
             error
         );
 
@@ -1811,7 +1481,9 @@ async function loadNodes() {
 function renderNodes(list) {
 
     if (!nodeGrid) {
+
         return;
+
     }
 
 
@@ -1843,14 +1515,8 @@ function renderNodes(list) {
     list.forEach(
         node => {
 
-            const card =
-                createNodeCard(
-                    node
-                );
-
-
             nodeGrid.appendChild(
-                card
+                createNodeCard(node)
             );
 
         }
@@ -1888,8 +1554,7 @@ function createNodeCard(node) {
                     <img
                         src="${escapeHTML(logo)}"
                         alt="${escapeHTML(
-                            node.name ||
-                            "Node"
+                            node.name || "Node"
                         )}"
                         loading="lazy"
                     >
@@ -2022,7 +1687,9 @@ function createNodeCard(node) {
 function showEmptyDirectory() {
 
     if (!nodeGrid) {
+
         return;
+
     }
 
 
@@ -2056,6 +1723,9 @@ function showEmptyDirectory() {
     `;
 
 
+    updateSubmitLinks();
+
+
     if (nodeCount) {
 
         nodeCount.textContent =
@@ -2073,7 +1743,9 @@ function showEmptyDirectory() {
 function setupSearch() {
 
     if (!searchInput) {
+
         return;
+
     }
 
 
@@ -2103,19 +1775,15 @@ function filterNodes() {
 
     const search =
         searchInput
-
             ? searchInput.value
                 .trim()
                 .toLowerCase()
-
             : "";
 
 
     const continent =
         continentFilter
-
             ? continentFilter.value
-
             : "";
 
 
@@ -2134,25 +1802,19 @@ function filterNodes() {
                     node.description
 
                 ]
-
                     .filter(Boolean)
-
                     .join(" ")
-
                     .toLowerCase();
 
 
                 const matchesSearch =
                     !search ||
-                    text.includes(
-                        search
-                    );
+                    text.includes(search);
 
 
                 const matchesContinent =
                     !continent ||
-                    node.continent ===
-                        continent;
+                    node.continent === continent;
 
 
                 return (
@@ -2164,9 +1826,7 @@ function filterNodes() {
         );
 
 
-    renderNodes(
-        filtered
-    );
+    renderNodes(filtered);
 
 }
 
@@ -2184,7 +1844,9 @@ function setupLanguage() {
 
 
     if (!selector) {
+
         return;
+
     }
 
 
@@ -2192,25 +1854,10 @@ function setupLanguage() {
         "change",
         () => {
 
-            const language =
-                selector.value;
-
-
             localStorage.setItem(
                 "nodehub-language",
-                language
+                selector.value
             );
-
-
-            if (
-                language === "pt-BR"
-            ) {
-
-                alert(
-                    "Português (BR) translation will be activated in the next development stage."
-                );
-
-            }
 
         }
     );
@@ -2233,7 +1880,7 @@ function setupLanguage() {
 
 
 // =============================================
-// SECURITY HELPERS
+// HTML SECURITY
 // =============================================
 
 function escapeHTML(value) {
@@ -2279,7 +1926,7 @@ function escapeHTML(value) {
 
 
 // =============================================
-// URL VALIDATION
+// SAFE URL
 // =============================================
 
 function safeURL(url) {
@@ -2291,11 +1938,8 @@ function safeURL(url) {
 
 
         if (
-            parsed.protocol ===
-                "https:" ||
-
-            parsed.protocol ===
-                "http:"
+            parsed.protocol === "https:" ||
+            parsed.protocol === "http:"
         ) {
 
             return escapeHTML(

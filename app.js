@@ -1,19 +1,17 @@
-```javascript
-// =============================================
+// =====================================================
 // NODE HUB
-// Supabase + Frontend + Authentication
-// =============================================
+// Supabase + Authentication + Dashboard + Node Upload
+// =====================================================
+
+// =====================================================
+// SUPABASE
+// =====================================================
 
 const SUPABASE_URL =
     "https://ynqtzyzxspoxssjrjeve.supabase.co";
 
 const SUPABASE_KEY =
     "sb_publishable_FoDbr9qgVeeIYfzEZNNN9Q_53aHxI2g";
-
-
-// =============================================
-// SUPABASE CLIENT
-// =============================================
 
 const { createClient } = supabase;
 
@@ -23,17 +21,17 @@ const db = createClient(
 );
 
 
-// =============================================
-// STATE
-// =============================================
+// =====================================================
+// GLOBAL STATE
+// =====================================================
 
-let nodes = [];
 let currentUser = null;
+let nodes = [];
 
 
-// =============================================
+// =====================================================
 // DOM
-// =============================================
+// =====================================================
 
 const nodeGrid =
     document.getElementById("node-grid");
@@ -48,9 +46,9 @@ const continentFilter =
     document.getElementById("continent-filter");
 
 
-// =============================================
-// INITIALIZE
-// =============================================
+// =====================================================
+// INITIALIZATION
+// =====================================================
 
 document.addEventListener(
     "DOMContentLoaded",
@@ -70,13 +68,20 @@ document.addEventListener(
 
         setupNavigation();
 
+        handleRoute();
+
+        window.addEventListener(
+            "hashchange",
+            handleRoute
+        );
+
     }
 );
 
 
-// =============================================
+// =====================================================
 // AUTHENTICATION
-// =============================================
+// =====================================================
 
 async function initializeAuth() {
 
@@ -86,6 +91,7 @@ async function initializeAuth() {
             data,
             error
         } = await db.auth.getSession();
+
 
         if (error) {
 
@@ -98,12 +104,15 @@ async function initializeAuth() {
 
         }
 
+
         currentUser =
             data.session
                 ? data.session.user
                 : null;
 
+
         updateAuthUI();
+
 
         db.auth.onAuthStateChange(
             async (event, session) => {
@@ -113,7 +122,30 @@ async function initializeAuth() {
                         ? session.user
                         : null;
 
+
                 updateAuthUI();
+
+
+                if (
+                    event === "SIGNED_IN"
+                ) {
+
+                    await loadNodes();
+
+                    updateDashboard();
+
+                }
+
+
+                if (
+                    event === "SIGNED_OUT"
+                ) {
+
+                    updateAuthUI();
+
+                    removeDashboard();
+
+                }
 
             }
         );
@@ -123,7 +155,7 @@ async function initializeAuth() {
     catch (error) {
 
         console.error(
-            "Authentication error:",
+            "Authentication initialization error:",
             error
         );
 
@@ -132,32 +164,26 @@ async function initializeAuth() {
 }
 
 
-// =============================================
+// =====================================================
 // AUTH UI
-// =============================================
+// =====================================================
 
 function updateAuthUI() {
 
-    const signInLinks =
-        document.querySelectorAll(
-            'a[href="#login"]'
+    const authNavText =
+        document.getElementById(
+            "auth-nav-text"
         );
 
-    signInLinks.forEach(link => {
 
-        if (currentUser) {
+    if (authNavText) {
 
-            link.textContent =
-                "Dashboard";
+        authNavText.textContent =
+            currentUser
+                ? "Dashboard"
+                : "Sign in";
 
-        } else {
-
-            link.textContent =
-                "Sign in";
-
-        }
-
-    });
+    }
 
 
     const accountStatus =
@@ -165,30 +191,196 @@ function updateAuthUI() {
             "account-status"
         );
 
+
     if (accountStatus) {
 
-        if (currentUser) {
-
-            accountStatus.textContent =
-                currentUser.email || "Signed in";
-
-        } else {
-
-            accountStatus.textContent =
-                "Not signed in";
-
-        }
+        accountStatus.textContent =
+            currentUser
+                ? (
+                    currentUser.email ||
+                    "Signed in"
+                )
+                : "Not signed in";
 
     }
 
 }
 
 
-// =============================================
+// =====================================================
+// ROUTING
+// =====================================================
+
+function handleRoute() {
+
+    const hash =
+        window.location.hash
+            .replace("#", "")
+            .toLowerCase();
+
+
+    if (
+        hash === "dashboard"
+    ) {
+
+        if (!currentUser) {
+
+            window.location.hash =
+                "login";
+
+            return;
+
+        }
+
+
+        showDashboard();
+
+        return;
+
+    }
+
+
+    if (
+        hash === "register"
+    ) {
+
+        if (!currentUser) {
+
+            window.location.hash =
+                "login";
+
+            return;
+
+        }
+
+
+        showDashboard();
+
+        setTimeout(
+            () => {
+
+                const form =
+                    document.getElementById(
+                        "dashboard-node-form"
+                    );
+
+                if (form) {
+
+                    form.scrollIntoView({
+                        behavior: "smooth"
+                    });
+
+                }
+
+            },
+            100
+        );
+
+        return;
+
+    }
+
+
+    if (
+        hash === "login"
+    ) {
+
+        if (currentUser) {
+
+            window.location.hash =
+                "dashboard";
+
+            return;
+
+        }
+
+        return;
+
+    }
+
+}
+
+
+// =====================================================
+// NAVIGATION
+// =====================================================
+
+function setupNavigation() {
+
+    document.addEventListener(
+        "click",
+        event => {
+
+            const link =
+                event.target.closest(
+                    "a[href]"
+                );
+
+
+            if (!link) {
+                return;
+            }
+
+
+            const href =
+                link.getAttribute(
+                    "href"
+                );
+
+
+            if (
+                href === "#submit"
+            ) {
+
+                event.preventDefault();
+
+
+                if (currentUser) {
+
+                    window.location.hash =
+                        "register";
+
+                } else {
+
+                    window.location.hash =
+                        "login";
+
+                }
+
+            }
+
+
+            if (
+                href === "#login"
+            ) {
+
+                if (currentUser) {
+
+                    event.preventDefault();
+
+                    window.location.hash =
+                        "dashboard";
+
+                }
+
+            }
+
+        }
+    );
+
+}
+
+
+// =====================================================
 // SIGN UP
-// =============================================
+// =====================================================
 
 async function signUp() {
+
+    const usernameInput =
+        document.getElementById(
+            "signup-username"
+        );
 
     const emailInput =
         document.getElementById(
@@ -200,13 +392,11 @@ async function signUp() {
             "signup-password"
         );
 
-    const usernameInput =
-        document.getElementById(
-            "signup-username"
-        );
 
-
-    if (!emailInput || !passwordInput) {
+    if (
+        !emailInput ||
+        !passwordInput
+    ) {
 
         alert(
             "Registration form not found."
@@ -217,16 +407,20 @@ async function signUp() {
     }
 
 
-    const email =
-        emailInput.value.trim();
-
-    const password =
-        passwordInput.value;
-
     const username =
         usernameInput
             ? usernameInput.value.trim()
             : "";
+
+
+    const email =
+        emailInput.value
+            .trim()
+            .toLowerCase();
+
+
+    const password =
+        passwordInput.value;
 
 
     if (!email || !password) {
@@ -258,9 +452,9 @@ async function signUp() {
             error
         } = await db.auth.signUp({
 
-            email: email,
+            email,
 
-            password: password,
+            password,
 
             options: {
 
@@ -269,8 +463,7 @@ async function signUp() {
 
                 data: {
 
-                    username:
-                        username
+                    username
 
                 }
 
@@ -289,6 +482,37 @@ async function signUp() {
             alert(
                 error.message
             );
+
+            return;
+
+        }
+
+
+        if (
+            data.user &&
+            data.session
+        ) {
+
+            currentUser =
+                data.user;
+
+
+            await createProfile(
+                username
+            );
+
+
+            updateAuthUI();
+
+
+            alert(
+                "Account created successfully."
+            );
+
+
+            window.location.hash =
+                "dashboard";
+
 
             return;
 
@@ -321,9 +545,72 @@ async function signUp() {
 }
 
 
-// =============================================
+// =====================================================
+// CREATE PROFILE
+// =====================================================
+
+async function createProfile(
+    username
+) {
+
+    if (!currentUser) {
+        return;
+    }
+
+
+    try {
+
+        const {
+            error
+        } = await db
+            .from("profiles")
+            .upsert({
+
+                id:
+                    currentUser.id,
+
+                username:
+                    username ||
+                    currentUser.email
+                        ?.split("@")[0] ||
+                    "User",
+
+                email:
+                    currentUser.email
+
+            }, {
+
+                onConflict: "id"
+
+            });
+
+
+        if (error) {
+
+            console.warn(
+                "Profile creation warning:",
+                error
+            );
+
+        }
+
+    }
+
+    catch (error) {
+
+        console.warn(
+            "Profile creation error:",
+            error
+        );
+
+    }
+
+}
+
+
+// =====================================================
 // SIGN IN
-// =============================================
+// =====================================================
 
 async function signIn() {
 
@@ -338,7 +625,10 @@ async function signIn() {
         );
 
 
-    if (!emailInput || !passwordInput) {
+    if (
+        !emailInput ||
+        !passwordInput
+    ) {
 
         alert(
             "Login form not found."
@@ -350,7 +640,10 @@ async function signIn() {
 
 
     const email =
-        emailInput.value.trim();
+        emailInput.value
+            .trim()
+            .toLowerCase();
+
 
     const password =
         passwordInput.value;
@@ -374,9 +667,9 @@ async function signIn() {
             error
         } = await db.auth.signInWithPassword({
 
-            email: email,
+            email,
 
-            password: password
+            password
 
         });
 
@@ -400,7 +693,9 @@ async function signIn() {
         currentUser =
             data.user;
 
+
         updateAuthUI();
+
 
         alert(
             "Welcome to Node Hub."
@@ -409,16 +704,6 @@ async function signIn() {
 
         window.location.hash =
             "dashboard";
-
-
-        setTimeout(
-            () => {
-
-                updateDashboard();
-
-            },
-            100
-        );
 
     }
 
@@ -438,9 +723,9 @@ async function signIn() {
 }
 
 
-// =============================================
+// =====================================================
 // LOGOUT
-// =============================================
+// =====================================================
 
 async function signOut() {
 
@@ -467,17 +752,20 @@ async function signOut() {
         }
 
 
-        currentUser = null;
-
-        updateAuthUI();
-
-        window.location.hash =
-            "home";
+        currentUser =
+            null;
 
 
         alert(
             "You have been signed out."
         );
+
+
+        window.location.hash =
+            "home";
+
+
+        location.reload();
 
     }
 
@@ -493,9 +781,9 @@ async function signOut() {
 }
 
 
-// =============================================
-// AUTH FORM EVENTS
-// =============================================
+// =====================================================
+// AUTH FORMS
+// =====================================================
 
 function setupAuthForms() {
 
@@ -503,6 +791,7 @@ function setupAuthForms() {
         document.getElementById(
             "signup-form"
         );
+
 
     const loginForm =
         document.getElementById(
@@ -544,660 +833,40 @@ function setupAuthForms() {
 }
 
 
-// =============================================
-// LOGOUT EVENT
-// =============================================
+// =====================================================
+// LOGOUT BUTTONS
+// =====================================================
 
 function setupLogout() {
-
-    const logoutButtons =
-        document.querySelectorAll(
-            "[data-action='logout']"
-        );
-
-
-    logoutButtons.forEach(button => {
-
-        button.addEventListener(
-            "click",
-            event => {
-
-                event.preventDefault();
-
-                signOut();
-
-            }
-        );
-
-    });
-
-}
-
-
-// =============================================
-// NAVIGATION
-// =============================================
-
-function setupNavigation() {
 
     document.addEventListener(
         "click",
         event => {
 
-            const link =
+            const button =
                 event.target.closest(
-                    "a[href^='#']"
+                    "[data-action='logout']"
                 );
 
 
-            if (!link) {
+            if (!button) {
                 return;
             }
 
 
-            const href =
-                link.getAttribute(
-                    "href"
-                );
-
-
-            if (
-                href === "#dashboard" ||
-                href === "#submit"
-            ) {
-
-                if (!currentUser) {
-
-                    event.preventDefault();
-
-                    window.location.hash =
-                        "login";
-
-                    return;
-
-                }
-
-            }
-
-
-            if (
-                href === "#dashboard"
-            ) {
-
-                setTimeout(
-                    updateDashboard,
-                    100
-                );
-
-            }
-
-        }
-    );
-
-}
-
-
-// =============================================
-// DASHBOARD
-// =============================================
-
-async function updateDashboard() {
-
-    if (!currentUser) {
-        return;
-    }
-
-
-    const emailElement =
-        document.getElementById(
-            "dashboard-email"
-        );
-
-
-    if (emailElement) {
-
-        emailElement.textContent =
-            currentUser.email || "";
-
-    }
-
-
-    const usernameElement =
-        document.getElementById(
-            "dashboard-username"
-        );
-
-
-    if (usernameElement) {
-
-        usernameElement.textContent =
-            currentUser.user_metadata?.username ||
-            currentUser.email?.split("@")[0] ||
-            "User";
-
-    }
-
-
-    await loadMyNodes();
-
-}
-
-
-// =============================================
-// LOAD MY NODES
-// =============================================
-
-async function loadMyNodes() {
-
-    if (!currentUser) {
-        return;
-    }
-
-
-    const {
-        data,
-        error
-    } = await db
-        .from("nodes")
-        .select("*")
-        .eq(
-            "owner_id",
-            currentUser.id
-        )
-        .order(
-            "created_at",
-            {
-                ascending: false
-            }
-        );
-
-
-    if (error) {
-
-        console.error(
-            "Error loading my Nodes:",
-            error
-        );
-
-        return;
-
-    }
-
-
-    const container =
-        document.getElementById(
-            "my-nodes"
-        );
-
-
-    if (!container) {
-        return;
-    }
-
-
-    if (!data || !data.length) {
-
-        container.innerHTML = `
-            <p>
-                No Nodes registered yet.
-            </p>
-        `;
-
-        return;
-
-    }
-
-
-    container.innerHTML =
-        data.map(node => {
-
-            return `
-                <div class="my-node">
-
-                    <strong>
-                        ${escapeHTML(
-                            node.name || "Unnamed Node"
-                        )}
-                    </strong>
-
-                    <span>
-                        ${escapeHTML(
-                            node.status || "pending"
-                        )}
-                    </span>
-
-                </div>
-            `;
-
-        }).join("");
-
-}
-
-
-// =============================================
-// REGISTER NODE
-// =============================================
-
-async function submitNode() {
-
-    if (!currentUser) {
-
-        alert(
-            "Please sign in before registering a Node."
-        );
-
-        window.location.hash =
-            "login";
-
-        return;
-
-    }
-
-
-    const name =
-        getValue("node-name");
-
-    const description =
-        getValue("node-description");
-
-    const city =
-        getValue("node-city");
-
-    const country =
-        getValue("node-country");
-
-    const continent =
-        getValue("node-continent");
-
-    const discord =
-        getValue("node-discord");
-
-    const twitter =
-        getValue("node-twitter");
-
-    const telegram =
-        getValue("node-telegram");
-
-
-    if (
-        !name ||
-        !description ||
-        !city ||
-        !country ||
-        !continent
-    ) {
-
-        alert(
-            "Please complete all required fields."
-        );
-
-        return;
-
-    }
-
-
-    const fileInput =
-        document.getElementById(
-            "node-logo"
-        );
-
-
-    let logoURL = "";
-
-
-    // =============================================
-    // UPLOAD LOGO
-    // =============================================
-
-    if (
-        fileInput &&
-        fileInput.files &&
-        fileInput.files.length
-    ) {
-
-        const file =
-            fileInput.files[0];
-
-
-        if (
-            !file.type.startsWith(
-                "image/"
-            )
-        ) {
-
-            alert(
-                "Please select an image file."
-            );
-
-            return;
-
-        }
-
-
-        const maxSize =
-            5 * 1024 * 1024;
-
-
-        if (file.size > maxSize) {
-
-            alert(
-                "The image must be smaller than 5 MB."
-            );
-
-            return;
-
-        }
-
-
-        const extension =
-            file.name
-                .split(".")
-                .pop()
-                .toLowerCase();
-
-
-        const fileName =
-            `${currentUser.id}/${Date.now()}-${crypto.randomUUID()}.${extension}`;
-
-
-        const {
-            error: uploadError
-        } = await db.storage
-            .from("node-images")
-            .upload(
-                fileName,
-                file,
-                {
-                    cacheControl:
-                        "3600",
-
-                    upsert:
-                        false,
-
-                    contentType:
-                        file.type
-
-                }
-            );
-
-
-        if (uploadError) {
-
-            console.error(
-                "Image upload error:",
-                uploadError
-            );
-
-            alert(
-                "Unable to upload the Node logo: " +
-                uploadError.message
-            );
-
-            return;
-
-        }
-
-
-        const {
-            data: publicData
-        } = db.storage
-            .from("node-images")
-            .getPublicUrl(
-                fileName
-            );
-
-
-        logoURL =
-            publicData.publicUrl;
-
-    }
-
-
-    // =============================================
-    // INSERT NODE
-    // =============================================
-
-    const {
-        data,
-        error
-    } = await db
-        .from("nodes")
-        .insert({
-
-            owner_id:
-                currentUser.id,
-
-            name:
-                name,
-
-            description:
-                description,
-
-            city:
-                city,
-
-            country:
-                country,
-
-            continent:
-                continent,
-
-            logo_url:
-                logoURL,
-
-            discord_url:
-                discord || null,
-
-            twitter_url:
-                twitter || null,
-
-            telegram_url:
-                telegram || null,
-
-            status:
-                "pending"
-
-        })
-        .select()
-        .single();
-
-
-    if (error) {
-
-        console.error(
-            "Node registration error:",
-            error
-        );
-
-        alert(
-            "Unable to register the Node: " +
-            error.message
-        );
-
-        return;
-
-    }
-
-
-    console.log(
-        "Node created:",
-        data
-    );
-
-
-    alert(
-        "Node submitted successfully. It is now waiting for review."
-    );
-
-
-    clearNodeForm();
-
-    await loadMyNodes();
-
-    window.location.hash =
-        "dashboard";
-
-}
-
-
-// =============================================
-// NODE FORM EVENTS
-// =============================================
-
-function setupNodeForm() {
-
-    const form =
-        document.getElementById(
-            "node-form"
-        );
-
-
-    if (!form) {
-        return;
-    }
-
-
-    form.addEventListener(
-        "submit",
-        event => {
-
             event.preventDefault();
 
-            submitNode();
+            signOut();
 
         }
     );
 
-
-    const fileInput =
-        document.getElementById(
-            "node-logo"
-        );
-
-
-    const preview =
-        document.getElementById(
-            "node-logo-preview"
-        );
-
-
-    if (
-        fileInput &&
-        preview
-    ) {
-
-        fileInput.addEventListener(
-            "change",
-            () => {
-
-                const file =
-                    fileInput.files[0];
-
-
-                if (!file) {
-
-                    preview.innerHTML =
-                        "";
-
-                    return;
-
-                }
-
-
-                if (
-                    !file.type.startsWith(
-                        "image/"
-                    )
-                ) {
-
-                    alert(
-                        "Please select an image file."
-                    );
-
-                    fileInput.value =
-                        "";
-
-                    preview.innerHTML =
-                        "";
-
-                    return;
-
-                }
-
-
-                const reader =
-                    new FileReader();
-
-
-                reader.onload =
-                    event => {
-
-                        preview.innerHTML = `
-                            <img
-                                src="${event.target.result}"
-                                alt="Node logo preview"
-                                style="
-                                    max-width:180px;
-                                    max-height:180px;
-                                    object-fit:contain;
-                                    border-radius:12px;
-                                "
-                            >
-                        `;
-
-                    };
-
-
-                reader.readAsDataURL(
-                    file
-                );
-
-            }
-        );
-
-    }
-
 }
 
 
-// =============================================
-// CLEAR NODE FORM
-// =============================================
-
-function clearNodeForm() {
-
-    const form =
-        document.getElementById(
-            "node-form"
-        );
-
-
-    if (form) {
-
-        form.reset();
-
-    }
-
-
-    const preview =
-        document.getElementById(
-            "node-logo-preview"
-        );
-
-
-    if (preview) {
-
-        preview.innerHTML =
-            "";
-
-    }
-
-}
-
-
-// =============================================
+// =====================================================
 // LOAD APPROVED NODES
-// =============================================
+// =====================================================
 
 async function loadNodes() {
 
@@ -1238,6 +907,7 @@ async function loadNodes() {
         nodes =
             data || [];
 
+
         renderNodes(nodes);
 
     }
@@ -1245,7 +915,7 @@ async function loadNodes() {
     catch (error) {
 
         console.error(
-            "Unexpected error:",
+            "Unexpected Node loading error:",
             error
         );
 
@@ -1256,11 +926,13 @@ async function loadNodes() {
 }
 
 
-// =============================================
+// =====================================================
 // RENDER NODES
-// =============================================
+// =====================================================
 
-function renderNodes(list) {
+function renderNodes(
+    list
+) {
 
     if (!nodeGrid) {
         return;
@@ -1292,23 +964,26 @@ function renderNodes(list) {
     }
 
 
-    list.forEach(node => {
+    list.forEach(
+        node => {
 
-        const card =
-            createNodeCard(node);
+            nodeGrid.appendChild(
+                createNodeCard(node)
+            );
 
-        nodeGrid.appendChild(card);
-
-    });
+        }
+    );
 
 }
 
 
-// =============================================
+// =====================================================
 // NODE CARD
-// =============================================
+// =====================================================
 
-function createNodeCard(node) {
+function createNodeCard(
+    node
+) {
 
     const article =
         document.createElement(
@@ -1321,7 +996,9 @@ function createNodeCard(node) {
 
 
     const logo =
-        node.logo_url || "";
+        node.logo_url ||
+        node.image_url ||
+        "";
 
 
     const imageHTML =
@@ -1379,7 +1056,6 @@ function createNodeCard(node) {
 
             ${
                 node.description
-
                     ? `
                         <p class="node-description">
                             ${escapeHTML(
@@ -1387,7 +1063,6 @@ function createNodeCard(node) {
                             )}
                         </p>
                     `
-
                     : ""
             }
 
@@ -1395,7 +1070,6 @@ function createNodeCard(node) {
 
                 ${
                     node.discord_url
-
                         ? `
                             <a
                                 href="${safeURL(
@@ -1407,13 +1081,11 @@ function createNodeCard(node) {
                                 Discord
                             </a>
                         `
-
                         : ""
                 }
 
                 ${
                     node.telegram_url
-
                         ? `
                             <a
                                 href="${safeURL(
@@ -1425,13 +1097,11 @@ function createNodeCard(node) {
                                 Telegram
                             </a>
                         `
-
                         : ""
                 }
 
                 ${
                     node.twitter_url
-
                         ? `
                             <a
                                 href="${safeURL(
@@ -1443,7 +1113,6 @@ function createNodeCard(node) {
                                 X / Twitter
                             </a>
                         `
-
                         : ""
                 }
 
@@ -1467,9 +1136,9 @@ function createNodeCard(node) {
 }
 
 
-// =============================================
+// =====================================================
 // EMPTY DIRECTORY
-// =============================================
+// =====================================================
 
 function showEmptyDirectory() {
 
@@ -1518,21 +1187,20 @@ function showEmptyDirectory() {
 }
 
 
-// =============================================
+// =====================================================
 // SEARCH
-// =============================================
+// =====================================================
 
 function setupSearch() {
 
-    if (!searchInput) {
-        return;
+    if (searchInput) {
+
+        searchInput.addEventListener(
+            "input",
+            filterNodes
+        );
+
     }
-
-
-    searchInput.addEventListener(
-        "input",
-        filterNodes
-    );
 
 
     if (continentFilter) {
@@ -1547,78 +1215,1163 @@ function setupSearch() {
 }
 
 
-// =============================================
+// =====================================================
 // FILTER
-// =============================================
+// =====================================================
 
 function filterNodes() {
 
     const search =
         searchInput
-
             ? searchInput.value
                 .trim()
                 .toLowerCase()
-
             : "";
 
 
     const continent =
         continentFilter
-
             ? continentFilter.value
-
             : "";
 
 
     const filtered =
-        nodes.filter(node => {
+        nodes.filter(
+            node => {
 
-            const text = [
+                const text = [
 
-                node.name,
+                    node.name,
 
-                node.city,
+                    node.city,
 
-                node.country,
+                    node.country,
 
-                node.description
+                    node.description
 
-            ]
-
-                .filter(Boolean)
-
-                .join(" ")
-
-                .toLowerCase();
+                ]
+                    .filter(Boolean)
+                    .join(" ")
+                    .toLowerCase();
 
 
-            const matchesSearch =
-                !search ||
-                text.includes(search);
+                const matchesSearch =
+                    !search ||
+                    text.includes(search);
 
 
-            const matchesContinent =
-                !continent ||
-                node.continent === continent;
+                const matchesContinent =
+                    !continent ||
+                    node.continent === continent;
 
 
-            return (
-                matchesSearch &&
-                matchesContinent
-            );
+                return (
+                    matchesSearch &&
+                    matchesContinent
+                );
 
-        });
+            }
+        );
 
 
-    renderNodes(filtered);
+    renderNodes(
+        filtered
+    );
 
 }
 
 
-// =============================================
+// =====================================================
+// DASHBOARD
+// =====================================================
+
+async function showDashboard() {
+
+    if (!currentUser) {
+
+        window.location.hash =
+            "login";
+
+        return;
+
+    }
+
+
+    let dashboard =
+        document.getElementById(
+            "nodehub-dashboard"
+        );
+
+
+    if (!dashboard) {
+
+        dashboard =
+            createDashboard();
+
+
+        document.body.appendChild(
+            dashboard
+        );
+
+    }
+
+
+    dashboard.style.display =
+        "block";
+
+
+    dashboard.scrollIntoView({
+        behavior: "smooth"
+    });
+
+
+    await updateDashboard();
+
+}
+
+
+// =====================================================
+// CREATE DASHBOARD
+// =====================================================
+
+function createDashboard() {
+
+    const section =
+        document.createElement(
+            "section"
+        );
+
+
+    section.id =
+        "nodehub-dashboard";
+
+
+    section.className =
+        "section section-alt";
+
+
+    section.innerHTML = `
+
+        <div class="container">
+
+            <div class="section-heading">
+
+                <span class="eyebrow">
+                    NODE HUB ACCOUNT
+                </span>
+
+                <h2>
+                    Dashboard
+                </h2>
+
+                <p>
+                    Manage your Node Hub account
+                    and Node submissions.
+                </p>
+
+            </div>
+
+
+            <div class="auth-card">
+
+                <span class="eyebrow">
+                    ACCOUNT
+                </span>
+
+                <h3>
+                    Welcome
+                </h3>
+
+                <p id="dashboard-welcome">
+                    Welcome to Node Hub.
+                </p>
+
+                <p id="dashboard-email">
+                    Loading...
+                </p>
+
+                <button
+                    type="button"
+                    class="button button-secondary"
+                    data-action="logout"
+                >
+                    Sign Out
+                </button>
+
+            </div>
+
+
+            <div class="auth-card">
+
+                <span class="eyebrow">
+                    YOUR NODES
+                </span>
+
+                <h3>
+                    My Nodes
+                </h3>
+
+                <div id="my-nodes">
+                    Loading your Nodes...
+                </div>
+
+            </div>
+
+
+            <div
+                id="dashboard-node-form"
+                class="auth-card"
+            >
+
+                <span class="eyebrow">
+                    NODE REGISTRATION
+                </span>
+
+                <h3>
+                    Register My Node
+                </h3>
+
+                <p>
+                    Node registration will be submitted
+                    for review by the Node Hub team.
+                </p>
+
+
+                <form id="node-registration-form">
+
+                    <label for="node-name">
+                        Node Name
+                    </label>
+
+                    <input
+                        type="text"
+                        id="node-name"
+                        required
+                        placeholder="Node name"
+                    >
+
+
+                    <label for="node-description">
+                        Description
+                    </label>
+
+                    <textarea
+                        id="node-description"
+                        rows="4"
+                        placeholder="Tell us about your Node"
+                    ></textarea>
+
+
+                    <label for="node-city">
+                        City
+                    </label>
+
+                    <input
+                        type="text"
+                        id="node-city"
+                        required
+                        placeholder="City"
+                    >
+
+
+                    <label for="node-country">
+                        Country
+                    </label>
+
+                    <input
+                        type="text"
+                        id="node-country"
+                        required
+                        placeholder="Country"
+                    >
+
+
+                    <label for="node-continent">
+                        Continent
+                    </label>
+
+                    <select
+                        id="node-continent"
+                        required
+                    >
+
+                        <option value="">
+                            Select continent
+                        </option>
+
+                        <option value="North America">
+                            North America
+                        </option>
+
+                        <option value="South America">
+                            South America
+                        </option>
+
+                        <option value="Europe">
+                            Europe
+                        </option>
+
+                        <option value="Asia">
+                            Asia
+                        </option>
+
+                        <option value="Africa">
+                            Africa
+                        </option>
+
+                        <option value="Oceania">
+                            Oceania
+                        </option>
+
+                    </select>
+
+
+                    <label for="node-logo">
+                        Node Logo
+                    </label>
+
+                    <input
+                        type="file"
+                        id="node-logo"
+                        accept="image/png,image/jpeg,image/webp"
+                    >
+
+                    <small>
+                        PNG, JPG or WEBP. Maximum 5 MB.
+                    </small>
+
+
+                    <div id="node-image-preview"></div>
+
+
+                    <label for="node-discord">
+                        Discord
+                    </label>
+
+                    <input
+                        type="url"
+                        id="node-discord"
+                        placeholder="https://discord.gg/..."
+                    >
+
+
+                    <label for="node-twitter">
+                        X / Twitter
+                    </label>
+
+                    <input
+                        type="url"
+                        id="node-twitter"
+                        placeholder="https://x.com/..."
+                    >
+
+
+                    <label for="node-telegram">
+                        Telegram
+                    </label>
+
+                    <input
+                        type="url"
+                        id="node-telegram"
+                        placeholder="https://t.me/..."
+                    >
+
+
+                    <button
+                        type="submit"
+                        class="button button-primary"
+                    >
+                        Submit Node for Review
+                    </button>
+
+
+                    <button
+                        type="button"
+                        id="cancel-node-registration"
+                        class="button button-secondary"
+                    >
+                        Cancel
+                    </button>
+
+                </form>
+
+            </div>
+
+        </div>
+
+    `;
+
+
+    setTimeout(
+        setupNodeRegistration,
+        0
+    );
+
+
+    return section;
+
+}
+
+
+// =====================================================
+// UPDATE DASHBOARD
+// =====================================================
+
+async function updateDashboard() {
+
+    if (!currentUser) {
+        return;
+    }
+
+
+    const welcome =
+        document.getElementById(
+            "dashboard-welcome"
+        );
+
+
+    const email =
+        document.getElementById(
+            "dashboard-email"
+        );
+
+
+    if (email) {
+
+        email.textContent =
+            currentUser.email || "";
+
+    }
+
+
+    let username =
+        currentUser.user_metadata
+            ?.username;
+
+
+    try {
+
+        const {
+            data
+        } = await db
+            .from("profiles")
+            .select("username")
+            .eq(
+                "id",
+                currentUser.id
+            )
+            .maybeSingle();
+
+
+        if (
+            data &&
+            data.username
+        ) {
+
+            username =
+                data.username;
+
+        }
+
+    }
+
+    catch (error) {
+
+        console.warn(
+            "Could not load profile:",
+            error
+        );
+
+    }
+
+
+    if (welcome) {
+
+        welcome.textContent =
+            `Welcome, ${
+                username ||
+                "Node Administrator"
+            }`;
+
+    }
+
+
+    await loadMyNodes();
+
+}
+
+
+// =====================================================
+// LOAD USER NODES
+// =====================================================
+
+async function loadMyNodes() {
+
+    const container =
+        document.getElementById(
+            "my-nodes"
+        );
+
+
+    if (!container) {
+        return;
+    }
+
+
+    if (!currentUser) {
+
+        container.textContent =
+            "Please sign in.";
+
+        return;
+
+    }
+
+
+    try {
+
+        const {
+            data,
+            error
+        } = await db
+            .from("nodes")
+            .select("*")
+            .eq(
+                "user_id",
+                currentUser.id
+            )
+            .order(
+                "created_at",
+                {
+                    ascending: false
+                }
+            );
+
+
+        if (error) {
+
+            console.error(
+                "My Nodes error:",
+                error
+            );
+
+
+            container.innerHTML = `
+                <p>
+                    Unable to load your Nodes.
+                </p>
+            `;
+
+            return;
+
+        }
+
+
+        if (!data || !data.length) {
+
+            container.innerHTML = `
+
+                <p>
+                    No Nodes registered yet.
+                </p>
+
+                <p>
+                    Use "Register My Node"
+                    to submit your first Node.
+                </p>
+
+            `;
+
+            return;
+
+        }
+
+
+        container.innerHTML =
+            data
+                .map(
+                    node => {
+
+                        return `
+
+                            <div class="node-card">
+
+                                ${
+                                    node.logo_url
+                                        ? `
+                                            <img
+                                                src="${escapeHTML(
+                                                    node.logo_url
+                                                )}"
+                                                alt="${escapeHTML(
+                                                    node.name
+                                                )}"
+                                                style="
+                                                    width:100%;
+                                                    max-height:220px;
+                                                    object-fit:contain;
+                                                "
+                                            >
+                                        `
+                                        : ""
+                                }
+
+                                <div class="node-card-content">
+
+                                    <h3>
+                                        ${escapeHTML(
+                                            node.name
+                                        )}
+                                    </h3>
+
+                                    <p>
+                                        ${escapeHTML(
+                                            node.city || ""
+                                        )},
+                                        ${escapeHTML(
+                                            node.country || ""
+                                        )}
+                                    </p>
+
+                                    <p>
+                                        Status:
+                                        <strong>
+                                            ${escapeHTML(
+                                                node.status ||
+                                                "pending"
+                                            )}
+                                        </strong>
+                                    </p>
+
+                                </div>
+
+                            </div>
+
+                        `;
+
+                    }
+                )
+                .join("");
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Unexpected My Nodes error:",
+            error
+        );
+
+    }
+
+}
+
+
+// =====================================================
+// NODE REGISTRATION
+// =====================================================
+
+function setupNodeRegistration() {
+
+    const form =
+        document.getElementById(
+            "node-registration-form"
+        );
+
+
+    if (!form) {
+        return;
+    }
+
+
+    const imageInput =
+        document.getElementById(
+            "node-logo"
+        );
+
+
+    if (imageInput) {
+
+        imageInput.addEventListener(
+            "change",
+            previewNodeImage
+        );
+
+    }
+
+
+    form.addEventListener(
+        "submit",
+        async event => {
+
+            event.preventDefault();
+
+            await submitNode();
+
+        }
+    );
+
+
+    const cancelButton =
+        document.getElementById(
+            "cancel-node-registration"
+        );
+
+
+    if (cancelButton) {
+
+        cancelButton.addEventListener(
+            "click",
+            () => {
+
+                window.location.hash =
+                    "home";
+
+            }
+        );
+
+    }
+
+}
+
+
+// =====================================================
+// IMAGE PREVIEW
+// =====================================================
+
+function previewNodeImage(
+    event
+) {
+
+    const file =
+        event.target.files?.[0];
+
+
+    const preview =
+        document.getElementById(
+            "node-image-preview"
+        );
+
+
+    if (!preview) {
+        return;
+    }
+
+
+    preview.innerHTML =
+        "";
+
+
+    if (!file) {
+        return;
+    }
+
+
+    if (!file.type.startsWith("image/")) {
+
+        alert(
+            "Please select an image file."
+        );
+
+        event.target.value =
+            "";
+
+        return;
+
+    }
+
+
+    if (
+        file.size >
+        5 * 1024 * 1024
+    ) {
+
+        alert(
+            "The image must be smaller than 5 MB."
+        );
+
+        event.target.value =
+            "";
+
+        return;
+
+    }
+
+
+    const image =
+        document.createElement(
+            "img"
+        );
+
+
+    image.src =
+        URL.createObjectURL(
+            file
+        );
+
+
+    image.style.maxWidth =
+        "250px";
+
+    image.style.maxHeight =
+        "250px";
+
+    image.style.marginTop =
+        "15px";
+
+    image.style.objectFit =
+        "contain";
+
+
+    preview.appendChild(
+        image
+    );
+
+}
+
+
+// =====================================================
+// SUBMIT NODE
+// =====================================================
+
+async function submitNode() {
+
+    if (!currentUser) {
+
+        alert(
+            "You must be signed in to register a Node."
+        );
+
+        window.location.hash =
+            "login";
+
+        return;
+
+    }
+
+
+    const name =
+        getValue("node-name");
+
+    const description =
+        getValue("node-description");
+
+    const city =
+        getValue("node-city");
+
+    const country =
+        getValue("node-country");
+
+    const continent =
+        getValue("node-continent");
+
+    const discord =
+        getValue("node-discord");
+
+    const twitter =
+        getValue("node-twitter");
+
+    const telegram =
+        getValue("node-telegram");
+
+
+    if (
+        !name ||
+        !city ||
+        !country ||
+        !continent
+    ) {
+
+        alert(
+            "Please complete Node Name, City, Country and Continent."
+        );
+
+        return;
+
+    }
+
+
+    const imageInput =
+        document.getElementById(
+            "node-logo"
+        );
+
+
+    const imageFile =
+        imageInput?.files?.[0] ||
+        null;
+
+
+    try {
+
+        let logoURL =
+            null;
+
+
+        // =================================================
+        // UPLOAD IMAGE
+        // =================================================
+
+        if (imageFile) {
+
+            if (
+                !imageFile.type.startsWith(
+                    "image/"
+                )
+            ) {
+
+                alert(
+                    "Please select a valid image."
+                );
+
+                return;
+
+            }
+
+
+            if (
+                imageFile.size >
+                5 * 1024 * 1024
+            ) {
+
+                alert(
+                    "The image must be smaller than 5 MB."
+                );
+
+                return;
+
+            }
+
+
+            const extension =
+                getFileExtension(
+                    imageFile.name
+                );
+
+
+            const fileName =
+                `${currentUser.id}/` +
+                `${Date.now()}-${randomString(8)}.` +
+                extension;
+
+
+            const {
+                error: uploadError
+            } = await db.storage
+                .from("node-images")
+                .upload(
+                    fileName,
+                    imageFile,
+                    {
+                        cacheControl:
+                            "3600",
+
+                        upsert:
+                            false,
+
+                        contentType:
+                            imageFile.type
+
+                    }
+                );
+
+
+            if (uploadError) {
+
+                console.error(
+                    "Image upload error:",
+                    uploadError
+                );
+
+                alert(
+                    "Could not upload the Node image: " +
+                    uploadError.message
+                );
+
+                return;
+
+            }
+
+
+            const {
+                data: publicURLData
+            } = db.storage
+                .from("node-images")
+                .getPublicUrl(
+                    fileName
+                );
+
+
+            logoURL =
+                publicURLData.publicUrl;
+
+        }
+
+
+        // =================================================
+        // INSERT NODE
+        // =================================================
+
+        const nodeData = {
+
+            user_id:
+                currentUser.id,
+
+            name,
+
+            description:
+                description || null,
+
+            city,
+
+            country,
+
+            continent,
+
+            logo_url:
+                logoURL,
+
+            discord_url:
+                discord || null,
+
+            twitter_url:
+                twitter || null,
+
+            telegram_url:
+                telegram || null,
+
+            status:
+                "pending"
+
+        };
+
+
+        const {
+            data,
+            error
+        } = await db
+            .from("nodes")
+            .insert(
+                nodeData
+            )
+            .select()
+            .single();
+
+
+        if (error) {
+
+            console.error(
+                "Node insert error:",
+                error
+            );
+
+            alert(
+                "Could not register the Node: " +
+                error.message
+            );
+
+            return;
+
+        }
+
+
+        console.log(
+            "Node created:",
+            data
+        );
+
+
+        alert(
+            "Node submitted successfully! It will be reviewed by the Node Hub team."
+        );
+
+
+        clearNodeForm();
+
+
+        await loadMyNodes();
+
+
+        window.location.hash =
+            "dashboard";
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Unexpected Node registration error:",
+            error
+        );
+
+        alert(
+            "Unable to submit the Node."
+        );
+
+    }
+
+}
+
+
+// =====================================================
+// CLEAR NODE FORM
+// =====================================================
+
+function clearNodeForm() {
+
+    const form =
+        document.getElementById(
+            "node-registration-form"
+        );
+
+
+    if (form) {
+
+        form.reset();
+
+    }
+
+
+    const preview =
+        document.getElementById(
+            "node-image-preview"
+        );
+
+
+    if (preview) {
+
+        preview.innerHTML =
+            "";
+
+    }
+
+}
+
+
+// =====================================================
+// REMOVE DASHBOARD
+// =====================================================
+
+function removeDashboard() {
+
+    const dashboard =
+        document.getElementById(
+            "nodehub-dashboard"
+        );
+
+
+    if (dashboard) {
+
+        dashboard.remove();
+
+    }
+
+}
+
+
+// =====================================================
 // LANGUAGE
-// =============================================
+// =====================================================
 
 function setupLanguage() {
 
@@ -1647,7 +2400,9 @@ function setupLanguage() {
             );
 
 
-            if (language === "pt-BR") {
+            if (
+                language === "pt-BR"
+            ) {
 
                 alert(
                     "Português (BR) translation will be activated in the next development stage."
@@ -1675,31 +2430,82 @@ function setupLanguage() {
 }
 
 
-// =============================================
-// GET VALUE
-// =============================================
+// =====================================================
+// HELPERS
+// =====================================================
 
-function getValue(id) {
+function getValue(
+    id
+) {
 
     const element =
-        document.getElementById(id);
+        document.getElementById(
+            id
+        );
 
 
-    if (!element) {
-        return "";
-    }
-
-
-    return element.value.trim();
+    return element
+        ? element.value.trim()
+        : "";
 
 }
 
 
-// =============================================
-// SECURITY HELPERS
-// =============================================
+function getFileExtension(
+    fileName
+) {
 
-function escapeHTML(value) {
+    const parts =
+        fileName.split(".");
+
+
+    return (
+        parts.length > 1
+            ? parts.pop()
+                .toLowerCase()
+            : "jpg"
+    );
+
+}
+
+
+function randomString(
+    length
+) {
+
+    const characters =
+        "abcdefghijklmnopqrstuvwxyz0123456789";
+
+
+    let result =
+        "";
+
+
+    for (
+        let i = 0;
+        i < length;
+        i++
+    ) {
+
+        result +=
+            characters.charAt(
+                Math.floor(
+                    Math.random() *
+                    characters.length
+                )
+            );
+
+    }
+
+
+    return result;
+
+}
+
+
+function escapeHTML(
+    value
+) {
 
     if (
         value === null ||
@@ -1741,11 +2547,9 @@ function escapeHTML(value) {
 }
 
 
-// =============================================
-// URL VALIDATION
-// =============================================
-
-function safeURL(url) {
+function safeURL(
+    url
+) {
 
     try {
 
@@ -1754,8 +2558,11 @@ function safeURL(url) {
 
 
         if (
-            parsed.protocol === "https:" ||
-            parsed.protocol === "http:"
+            parsed.protocol ===
+                "https:" ||
+
+            parsed.protocol ===
+                "http:"
         ) {
 
             return escapeHTML(
@@ -1779,20 +2586,3 @@ function safeURL(url) {
     return "#";
 
 }
-
-
-// =============================================
-// START NODE FORM
-// =============================================
-
-setTimeout(
-    () => {
-
-        setupNodeForm();
-
-        updateDashboard();
-
-    },
-    300
-);
-```

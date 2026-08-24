@@ -44,6 +44,28 @@ async function initializeAuth() {
     } catch (error) { console.error("Authentication initialization error:", error); }
 }
 
+async function getCurrentRole() {
+    if (!currentUser) return "user";
+    try {
+        const { data, error } = await db.from("profiles").select("role").eq("id", currentUser.id).maybeSingle();
+        if (error) { console.warn("Role lookup failed:", error); return "user"; }
+        return data?.role || "user";
+    } catch (error) {
+        console.warn("Role lookup failed:", error);
+        return "user";
+    }
+}
+
+async function routeAuthenticatedUser() {
+    if (!currentUser) { window.location.hash = "login"; return; }
+    const role = await getCurrentRole();
+    if (["owner", "admin", "moderator"].includes(role)) {
+        window.location.href = "./admin.html";
+        return;
+    }
+    showDashboard();
+}
+
 function updateAuthUI() {
     const authNavText = document.getElementById("auth-nav-text");
     if (authNavText) authNavText.textContent = currentUser ? "Dashboard" : "Sign in";
@@ -65,7 +87,7 @@ function setDashboardMode(active) {
     }
 }
 
-function handleRoute() {
+async function handleRoute() {
     const hash = window.location.hash.replace(/^#/, "").toLowerCase();
     if (hash.startsWith("node/")) {
         setDashboardMode(false);
@@ -76,12 +98,14 @@ function handleRoute() {
     removeNodeProfile();
     if (hash === "dashboard" || hash === "register") {
         if (!currentUser) { window.location.hash = "login"; return; }
-        showDashboard();
-        if (hash === "register") setTimeout(() => document.getElementById("dashboard-node-form")?.scrollIntoView({ behavior: "smooth" }), 100);
+        await routeAuthenticatedUser();
+        if (hash === "register" && currentUser && !["owner", "admin", "moderator"].includes(await getCurrentRole())) {
+            setTimeout(() => document.getElementById("dashboard-node-form")?.scrollIntoView({ behavior: "smooth" }), 100);
+        }
         return;
     }
     setDashboardMode(false);
-    if (hash === "login" && currentUser) window.location.hash = "dashboard";
+    if (hash === "login" && currentUser) await routeAuthenticatedUser();
 }
 
 function setupNavigation() {
@@ -137,7 +161,7 @@ async function signIn() {
         if (error) { alert(error.message); return; }
         currentUser = data.user;
         updateAuthUI();
-        window.location.hash = "dashboard";
+        await routeAuthenticatedUser();
     } catch (error) { console.error(error); alert("Unable to sign in."); }
     finally { if (button) { button.disabled = false; button.textContent = original; } }
 }
@@ -192,28 +216,8 @@ function createNodeCard(node) {
     const article = document.createElement("article");
     article.className = "node-card";
     const logo = node.logo_url || node.image_url || "";
-    const imageHTML = logo
-        ? `<div class="node-card-image"><img src="${escapeHTML(logo)}" alt="" aria-hidden="true" loading="lazy"></div>`
-        : `<div class="node-card-image node-card-placeholder">●</div>`;
-
-    article.innerHTML = `
-        ${imageHTML}
-        <div class="node-card-content">
-            <h3>${escapeHTML(node.name || "Unnamed Node")}</h3>
-            <p class="node-location">${escapeHTML(node.city || "")}${node.country ? `, ${escapeHTML(node.country)}` : ""}</p>
-            ${node.upland_location ? `<p class="node-upland-location"><strong>Neighborhood:</strong> ${escapeHTML(node.upland_location)}</p>` : ""}
-            <div class="node-links" style="justify-content:center;">
-                ${node.discord_url ? `<a href="${safeURL(node.discord_url)}" target="_blank" rel="noopener noreferrer">Discord</a>` : ""}
-                ${node.telegram_url ? `<a href="${safeURL(node.telegram_url)}" target="_blank" rel="noopener noreferrer">Telegram</a>` : ""}
-                ${node.twitter_url ? `<a href="${safeURL(node.twitter_url)}" target="_blank" rel="noopener noreferrer">X / Twitter</a>` : ""}
-            </div>
-            <div style="text-align:center;margin-top:18px;">
-                <a class="node-profile-link" href="#node/${encodeURIComponent(node.id)}" style="color:var(--accent-light);font-weight:800;text-decoration:underline;text-underline-offset:4px;">View Node Profile</a>
-            </div>
-            <div class="node-card-footer" style="justify-content:center;margin-top:16px;">
-                <span class="verified-badge" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;color:var(--accent-light);font-weight:800;">✓ Verified Node</span>
-            </div>
-        </div>`;
+    const imageHTML = logo ? `<div class="node-card-image"><img src="${escapeHTML(logo)}" alt="" aria-hidden="true" loading="lazy"></div>` : `<div class="node-card-image node-card-placeholder">●</div>`;
+    article.innerHTML = `${imageHTML}<div class="node-card-content"><h3>${escapeHTML(node.name || "Unnamed Node")}</h3><p class="node-location">${escapeHTML(node.city || "")}${node.country ? `, ${escapeHTML(node.country)}` : ""}</p>${node.upland_location ? `<p class="node-upland-location"><strong>Neighborhood:</strong> ${escapeHTML(node.upland_location)}</p>` : ""}<div class="node-links" style="justify-content:center;">${node.discord_url ? `<a href="${safeURL(node.discord_url)}" target="_blank" rel="noopener noreferrer">Discord</a>` : ""}${node.telegram_url ? `<a href="${safeURL(node.telegram_url)}" target="_blank" rel="noopener noreferrer">Telegram</a>` : ""}${node.twitter_url ? `<a href="${safeURL(node.twitter_url)}" target="_blank" rel="noopener noreferrer">X / Twitter</a>` : ""}</div><div style="text-align:center;margin-top:18px;"><a class="node-profile-link" href="#node/${encodeURIComponent(node.id)}" style="color:var(--accent-light);font-weight:800;text-decoration:underline;text-underline-offset:4px;">View Node Profile</a></div><div class="node-card-footer" style="justify-content:center;margin-top:16px;"><span class="verified-badge" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;color:var(--accent-light);font-weight:800;">✓ Verified Node</span></div></div>`;
     return article;
 }
 
@@ -247,30 +251,10 @@ async function showNodeProfile(nodeId) {
     section.scrollIntoView({ behavior: "smooth" });
     try {
         const { data: node, error } = await db.from("nodes").select("*").eq("id", nodeId).eq("status", "approved").maybeSingle();
-        if (error || !node) {
-            section.innerHTML = `<div class="container"><div class="auth-card"><h2>Node not found</h2><p>This Node is unavailable or has not been approved.</p><a href="#nodes" class="button button-primary">Back to Nodes</a></div></div>`;
-            return;
-        }
+        if (error || !node) { section.innerHTML = `<div class="container"><div class="auth-card"><h2>Node not found</h2><p>This Node is unavailable or has not been approved.</p><a href="#nodes" class="button button-primary">Back to Nodes</a></div></div>`; return; }
         const logo = node.logo_url || node.image_url || "";
-        section.innerHTML = `<div class="container"><div class="auth-card" style="text-align:center;max-width:900px;margin:0 auto;">
-            ${logo ? `<img src="${escapeHTML(logo)}" alt="" aria-hidden="true" style="display:block;width:min(280px,100%);max-height:280px;object-fit:contain;margin:0 auto 24px;">` : ""}
-            <span class="eyebrow">VERIFIED NODE</span>
-            <h2>${escapeHTML(node.name)}</h2>
-            <p>${escapeHTML(node.city || "")}${node.country ? `, ${escapeHTML(node.country)}` : ""}</p>
-            ${node.upland_location ? `<p><strong>Neighborhood:</strong> ${escapeHTML(node.upland_location)}</p>` : ""}
-            ${node.description ? `<p>${escapeHTML(node.description)}</p>` : ""}
-            <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:22px;">
-                ${node.upland_node_url ? `<a class="button button-primary" href="${safeURL(node.upland_node_url)}" target="_blank" rel="noopener noreferrer">Open Node in Upland</a>` : ""}
-                ${node.discord_url ? `<a class="button button-secondary" href="${safeURL(node.discord_url)}" target="_blank" rel="noopener noreferrer">Discord</a>` : ""}
-                ${node.telegram_url ? `<a class="button button-secondary" href="${safeURL(node.telegram_url)}" target="_blank" rel="noopener noreferrer">Telegram</a>` : ""}
-                ${node.twitter_url ? `<a class="button button-secondary" href="${safeURL(node.twitter_url)}" target="_blank" rel="noopener noreferrer">X / Twitter</a>` : ""}
-            </div>
-            <div style="margin-top:24px;"><a href="#nodes">← Back to Nodes</a></div>
-        </div></div>`;
-    } catch (error) {
-        console.error(error);
-        section.innerHTML = `<div class="container"><div class="auth-card"><h2>Unable to load Node</h2><p>Please try again.</p><a href="#nodes" class="button button-primary">Back to Nodes</a></div></div>`;
-    }
+        section.innerHTML = `<div class="container"><div class="auth-card" style="text-align:center;max-width:900px;margin:0 auto;">${logo ? `<img src="${escapeHTML(logo)}" alt="" aria-hidden="true" style="display:block;width:min(280px,100%);max-height:280px;object-fit:contain;margin:0 auto 24px;">` : ""}<span class="eyebrow">VERIFIED NODE</span><h2>${escapeHTML(node.name)}</h2><p>${escapeHTML(node.city || "")}${node.country ? `, ${escapeHTML(node.country)}` : ""}</p>${node.upland_location ? `<p><strong>Neighborhood:</strong> ${escapeHTML(node.upland_location)}</p>` : ""}${node.description ? `<p>${escapeHTML(node.description)}</p>` : ""}<div style="display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:22px;">${node.upland_node_url ? `<a class="button button-primary" href="${safeURL(node.upland_node_url)}" target="_blank" rel="noopener noreferrer">Open Node in Upland</a>` : ""}${node.discord_url ? `<a class="button button-secondary" href="${safeURL(node.discord_url)}" target="_blank" rel="noopener noreferrer">Discord</a>` : ""}${node.telegram_url ? `<a class="button button-secondary" href="${safeURL(node.telegram_url)}" target="_blank" rel="noopener noreferrer">Telegram</a>` : ""}${node.twitter_url ? `<a class="button button-secondary" href="${safeURL(node.twitter_url)}" target="_blank" rel="noopener noreferrer">X / Twitter</a>` : ""}</div><div style="margin-top:24px;"><a href="#nodes">← Back to Nodes</a></div></div></div>`;
+    } catch (error) { console.error(error); section.innerHTML = `<div class="container"><div class="auth-card"><h2>Unable to load Node</h2><p>Please try again.</p><a href="#nodes" class="button button-primary">Back to Nodes</a></div></div>`; }
 }
 
 function removeNodeProfile() { document.getElementById("nodehub-node-profile")?.remove(); }
@@ -289,25 +273,7 @@ function createDashboard() {
     const section = document.createElement("section");
     section.id = "nodehub-dashboard";
     section.className = "section section-alt";
-    section.innerHTML = `<div class="container">
-        <div class="section-heading"><span class="eyebrow">NODE HUB ACCOUNT</span><h2>Dashboard</h2><p>Manage your Node Hub account and Node submissions.</p><button type="button" id="dashboard-logout-button" data-action="logout" class="button button-secondary">Sign out</button></div>
-        <div class="auth-card"><span class="eyebrow">YOUR NODES</span><h3>My Nodes</h3><div id="my-nodes">Loading your Nodes...</div></div>
-        <div id="dashboard-node-form" class="auth-card"><span class="eyebrow">NODE REGISTRATION</span><h3>Register My Node</h3><p>Node registration will be submitted for review by the Node Hub team.</p>
-        <form id="node-registration-form">
-            <label for="node-name">Node Name</label><input type="text" id="node-name" required placeholder="Node name">
-            <label for="node-description">Description</label><textarea id="node-description" rows="4" placeholder="Tell us about your Node"></textarea>
-            <label for="node-city">City</label><input type="text" id="node-city" required placeholder="City">
-            <label for="node-country">Country</label><input type="text" id="node-country" required placeholder="Country">
-            <label for="node-upland-location">Neighborhood</label><input type="text" id="node-upland-location" placeholder="Example: Porto, Chicago"><small>Enter the Neighborhood where your Node is located in Upland.</small>
-            <label for="node-upland-url">Upland Node Link</label><input type="url" id="node-upland-url" name="upland_node_url" placeholder="https://play.upland.me/..."><small>Paste the direct link to the Node property in Upland.</small>
-            <label for="node-continent">Continent</label><select id="node-continent" required><option value="">Select continent</option><option value="North America">North America</option><option value="South America">South America</option><option value="Europe">Europe</option><option value="Asia">Asia</option><option value="Africa">Africa</option><option value="Oceania">Oceania</option></select>
-            <label for="node-logo">Node Logo</label><input type="file" id="node-logo" accept="image/png,image/jpeg,image/webp"><small>PNG, JPG or WEBP. Maximum 5 MB.</small><div id="node-image-preview"></div>
-            <label for="node-discord">Discord</label><input type="url" id="node-discord" placeholder="https://discord.gg/...">
-            <label for="node-twitter">X / Twitter</label><input type="url" id="node-twitter" placeholder="https://x.com/...">
-            <label for="node-telegram">Telegram</label><input type="url" id="node-telegram" placeholder="https://t.me/...">
-            <button type="submit" class="button button-primary">Submit Node for Review</button>
-            <button type="button" id="cancel-node-registration" class="button button-secondary">Cancel</button>
-        </form></div></div>`;
+    section.innerHTML = `<div class="container"><div class="section-heading"><span class="eyebrow">NODE HUB ACCOUNT</span><h2>Dashboard</h2><p>Manage your Node Hub account and Node submissions.</p><button type="button" id="dashboard-logout-button" data-action="logout" class="button button-secondary">Sign out</button></div><div class="auth-card"><span class="eyebrow">YOUR NODES</span><h3>My Nodes</h3><div id="my-nodes">Loading your Nodes...</div></div><div id="dashboard-node-form" class="auth-card"><span class="eyebrow">NODE REGISTRATION</span><h3>Register My Node</h3><p>Node registration will be submitted for review by the Node Hub team.</p><form id="node-registration-form"><label for="node-name">Node Name</label><input type="text" id="node-name" required placeholder="Node name"><label for="node-description">Description</label><textarea id="node-description" rows="4" placeholder="Tell us about your Node"></textarea><label for="node-city">City</label><input type="text" id="node-city" required placeholder="City"><label for="node-country">Country</label><input type="text" id="node-country" required placeholder="Country"><label for="node-upland-location">Neighborhood</label><input type="text" id="node-upland-location" placeholder="Example: Porto, Chicago"><small>Enter the Neighborhood where your Node is located in Upland.</small><label for="node-upland-url">Upland Node Link</label><input type="url" id="node-upland-url" name="upland_node_url" placeholder="https://play.upland.me/..."><small>Paste the direct link to the Node property in Upland.</small><label for="node-continent">Continent</label><select id="node-continent" required><option value="">Select continent</option><option value="North America">North America</option><option value="South America">South America</option><option value="Europe">Europe</option><option value="Asia">Asia</option><option value="Africa">Africa</option><option value="Oceania">Oceania</option></select><label for="node-logo">Node Logo</label><input type="file" id="node-logo" accept="image/png,image/jpeg,image/webp"><small>PNG, JPG or WEBP. Maximum 5 MB.</small><div id="node-image-preview"></div><label for="node-discord">Discord</label><input type="url" id="node-discord" placeholder="https://discord.gg/..."><label for="node-twitter">X / Twitter</label><input type="url" id="node-twitter" placeholder="https://x.com/..."><label for="node-telegram">Telegram</label><input type="url" id="node-telegram" placeholder="https://t.me/..."><button type="submit" class="button button-primary">Submit Node for Review</button><button type="button" id="cancel-node-registration" class="button button-secondary">Cancel</button></form></div></div>`;
     setTimeout(setupNodeRegistration, 0);
     return section;
 }
@@ -377,7 +343,8 @@ async function submitNode() {
             if (uploadError) { alert("Could not upload the Node image: " + uploadError.message); return; }
             logoURL = db.storage.from("node-images").getPublicUrl(fileName).data.publicUrl;
         }
-        const { error } = await db.from("nodes").insert({ user_id: currentUser.id, name, description: description || null, city, country, upland_location: uplandLocation || null, upland_node_url: uplandNodeURL || null, continent, logo_url: logoURL, discord_url: discord || null, twitter_url: twitter || null, telegram_url: telegram || null, status: "pending" });
+        const payload = { user_id: currentUser.id, name, description: description || null, city, country, upland_location: uplandLocation || null, continent, logo_url: logoURL, discord_url: discord || null, twitter_url: twitter || null, telegram_url: telegram || null, status: "pending" };
+        const { error } = await db.from("nodes").insert(payload);
         if (error) { alert("Could not register the Node: " + error.message); return; }
         alert("Node submitted successfully! It will be reviewed by the Node Hub team.");
         clearNodeForm();

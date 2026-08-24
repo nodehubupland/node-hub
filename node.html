@@ -6,96 +6,22 @@
 <meta name="theme-color" content="#0a0a0a">
 <title>Node | Node Hub</title>
 <style>
-:root{--bg:#080808;--panel:#111;--panel2:#151515;--border:#272727;--text:#f5f5f5;--muted:#9b9b9b;--accent:#f39a32;--green:#79d58c;--max:980px}
-*{box-sizing:border-box}
-html{scroll-behavior:smooth}
-body{margin:0;background:radial-gradient(circle at 50% -10%,#1d160f 0,#080808 38%);color:var(--text);font-family:Inter,Arial,Helvetica,sans-serif;min-height:100vh}
-a{color:inherit}
-.container{width:min(var(--max),calc(100% - 32px));margin:0 auto;padding:28px 0 70px}
-.back{display:inline-flex;align-items:center;gap:8px;margin:0 0 24px;color:#d0d0d0;text-decoration:none;font-size:14px;font-weight:600;transition:.2s}
-.back:hover{color:var(--accent)}
+:root{--bg:#080808;--panel:#111;--border:#272727;--text:#f5f5f5;--muted:#9b9b9b;--accent:#f39a32;--green:#79d58c;--max:980px}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:radial-gradient(circle at 50% -10%,#1d160f 0,#080808 38%);color:var(--text);font-family:Inter,Arial,Helvetica,sans-serif;min-height:100vh}a{color:inherit}
+.container{width:min(var(--max),calc(100% - 32px));margin:0 auto;padding:28px 0 70px}.back{display:flex;align-items:center;justify-content:center;gap:8px;margin:0 0 24px;color:#d0d0d0;text-decoration:none;font-size:14px;font-weight:600}.back:hover{color:var(--accent)}
 .profile{overflow:hidden;background:linear-gradient(145deg,#151515,#0f0f0f);border:1px solid var(--border);border-radius:24px;box-shadow:0 24px 70px rgba(0,0,0,.45)}
-.hero{position:relative;padding:42px 42px 34px;border-bottom:1px solid var(--border);background:linear-gradient(135deg,rgba(243,154,50,.09),transparent 42%)}
-.hero-top{display:flex;align-items:flex-start;gap:28px}
-.logo{width:150px;height:150px;flex:0 0 150px;border-radius:22px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#0a0a0a;border:1px solid #303030;box-shadow:0 12px 35px rgba(0,0,0,.35)}
-.logo img{width:100%;height:100%;object-fit:contain}
-.placeholder{font-size:54px;color:#555}
-.identity{min-width:0;padding-top:5px}
-.eyebrow{display:inline-block;font-size:11px;letter-spacing:2px;color:var(--accent);font-weight:800;text-transform:uppercase}
-h1{margin:9px 0 10px;font-size:clamp(30px,5vw,48px);line-height:1.05;letter-spacing:-1px}
-.verified{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid rgba(121,213,140,.25);border-radius:999px;background:rgba(121,213,140,.09);color:var(--green);font-size:12px;font-weight:700}
-.subtitle{margin:15px 0 0;color:#c2c2c2;font-size:15px}
-.content{padding:34px 42px 42px}
-.info-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:32px}
-.info{padding:17px 18px;border:1px solid var(--border);border-radius:14px;background:rgba(255,255,255,.02)}
-.info-label{display:block;margin-bottom:6px;color:#777;font-size:10px;letter-spacing:1.6px;text-transform:uppercase;font-weight:800}
-.info-value{display:block;color:#eee;font-size:14px;font-weight:600;line-height:1.4;word-break:break-word}
-.section-title{margin:0 0 12px;font-size:14px;letter-spacing:1.4px;text-transform:uppercase;color:#aaa}
-.description{margin:0;color:#d3d3d3;font-size:16px;line-height:1.8;white-space:pre-line}
-.community{margin-top:30px;padding-top:28px;border-top:1px solid var(--border)}
-.community p{margin:0 0 16px;color:#8f8f8f;font-size:13px}
-.links{display:flex;flex-wrap:wrap;gap:10px}
-.links a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 17px;border-radius:11px;background:var(--accent);color:#111;text-decoration:none;font-size:13px;font-weight:800;transition:transform .2s,opacity .2s}
-.links a:hover{transform:translateY(-2px);opacity:.92}
-.footer{padding:18px 42px;border-top:1px solid var(--border);color:#666;font-size:11px;display:flex;justify-content:space-between;gap:15px}
-.error{text-align:center;padding:90px 25px;background:#111;border:1px solid var(--border);border-radius:22px}.error h2{margin:0 0 10px}.error p{margin:0;color:var(--muted)}
-@media(max-width:700px){.container{width:min(100% - 20px,var(--max));padding-top:18px}.hero{padding:28px 22px}.hero-top{flex-direction:column;align-items:center;text-align:center}.logo{width:132px;height:132px;flex-basis:132px}.identity{width:100%}.content{padding:26px 22px 30px}.info-grid{grid-template-columns:1fr;margin-bottom:26px}.links{display:grid;grid-template-columns:1fr}.links a{width:100%}.footer{padding:16px 22px;flex-direction:column}}
+.hero{position:relative;padding:48px 42px 38px;border-bottom:1px solid var(--border);background:linear-gradient(135deg,rgba(243,154,50,.09),transparent 42%);text-align:center}.hero-top{display:flex;flex-direction:column;align-items:center;gap:22px}.logo{width:170px;height:170px;border-radius:24px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#0a0a0a;border:1px solid #303030;box-shadow:0 12px 35px rgba(0,0,0,.35)}.logo img{width:100%;height:100%;object-fit:contain;display:block}.placeholder{font-size:54px;color:#555}.identity{width:100%}.eyebrow{display:block;font-size:11px;letter-spacing:2px;color:var(--accent);font-weight:800;text-transform:uppercase}h1{margin:10px 0 12px;font-size:clamp(30px,5vw,48px);line-height:1.05;letter-spacing:-1px}.verified{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border:1px solid rgba(121,213,140,.25);border-radius:999px;background:rgba(121,213,140,.09);color:var(--green);font-size:12px;font-weight:700}.subtitle{margin:14px 0 0;color:#c2c2c2;font-size:15px}
+.content{padding:36px 42px 44px;text-align:center}.info-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:34px}.info{padding:17px 18px;border:1px solid var(--border);border-radius:14px;background:rgba(255,255,255,.02)}.info-label{display:block;margin-bottom:6px;color:#777;font-size:10px;letter-spacing:1.6px;text-transform:uppercase;font-weight:800}.info-value{display:block;color:#eee;font-size:14px;font-weight:600;line-height:1.4;word-break:break-word}.section-title{margin:0 0 12px;font-size:14px;letter-spacing:1.4px;text-transform:uppercase;color:#aaa}.description{margin:0 auto;color:#d3d3d3;font-size:16px;line-height:1.8;white-space:pre-line;max-width:720px}.community{margin-top:30px;padding-top:28px;border-top:1px solid var(--border)}.community p{margin:0 0 16px;color:#8f8f8f;font-size:13px}.links{display:flex;flex-wrap:wrap;justify-content:center;gap:10px}.links a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 17px;border-radius:11px;background:var(--accent);color:#111;text-decoration:none;font-size:13px;font-weight:800}.footer{padding:18px 42px;border-top:1px solid var(--border);color:#666;font-size:11px;display:flex;justify-content:center;gap:15px}.error{text-align:center;padding:90px 25px;background:#111;border:1px solid var(--border);border-radius:22px}.error h2{margin:0 0 10px}.error p{margin:0;color:var(--muted)}
+@media(max-width:700px){.container{width:min(100% - 20px,var(--max));padding-top:18px}.hero{padding:32px 22px}.logo{width:140px;height:140px}.content{padding:28px 22px 32px}.info-grid{grid-template-columns:1fr;margin-bottom:28px}.links{display:grid;grid-template-columns:1fr}.links a{width:100%}.footer{padding:16px 22px;flex-direction:column;align-items:center}}
 </style>
 </head>
 <body>
-<div class="container">
-<a class="back" href="./#nodes">← Back to Nodes</a>
-<div id="app"><div class="error">Loading Node...</div></div>
-</div>
+<div class="container"><a class="back" href="./#nodes">← Back to Nodes</a><div id="app"><div class="error">Loading Node...</div></div></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-const SUPABASE_URL="https://ynqtzyzxspoxssjrjeve.supabase.co";
-const SUPABASE_KEY="sb_publishable_FoDbr9qgVeeIYfzEZNNN9N_53aHxI2g";
-const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
-function esc(v){return String(v??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#039;')}
-function safe(v){try{const u=new URL(v);return ['http:','https:'].includes(u.protocol)?esc(u.href):'#'}catch{return '#'}}
-async function load(){
- const params=new URLSearchParams(location.search);
- const id=params.get('id');
- const name=params.get('name');
- if(!id&&!name){document.getElementById('app').innerHTML='<div class="error"><h2>Node not found</h2><p>No Node identifier was provided.</p></div>';return}
- let q=db.from('nodes').select('*').eq('status','approved');
- q=id?q.eq('id',id).maybeSingle():q.eq('name',name).maybeSingle();
- const {data,error}=await q;
- if(error||!data){document.getElementById('app').innerHTML='<div class="error"><h2>Node not found</h2><p>This Node may not be approved or may no longer exist.</p></div>';return}
- document.title=`${data.name||'Node'} | Node Hub`;
- const links=[];
- if(data.discord_url)links.push(`<a href="${safe(data.discord_url)}" target="_blank" rel="noopener noreferrer">Join Discord</a>`);
- if(data.telegram_url)links.push(`<a href="${safe(data.telegram_url)}" target="_blank" rel="noopener noreferrer">Join Telegram</a>`);
- if(data.twitter_url)links.push(`<a href="${safe(data.twitter_url)}" target="_blank" rel="noopener noreferrer">Follow on X</a>`);
- const logo=data.logo_url?`<img src="${safe(data.logo_url)}" alt="${esc(data.name)}">`:'<div class="placeholder">●</div>';
- const location=[data.city,data.country].filter(Boolean).map(esc).join(', ');
- document.getElementById('app').innerHTML=`
- <article class="profile">
-   <header class="hero">
-     <div class="hero-top">
-       <div class="logo">${logo}</div>
-       <div class="identity">
-         <span class="eyebrow">Upland Community</span>
-         <h1>${esc(data.name||'Unnamed Node')}</h1>
-         <span class="verified">✓ Verified Node</span>
-         ${location?`<p class="subtitle">${location}</p>`:''}
-       </div>
-     </div>
-   </header>
-   <div class="content">
-     <div class="info-grid">
-       ${location?`<div class="info"><span class="info-label">Location</span><span class="info-value">${location}</span></div>`:''}
-       ${data.upland_location?`<div class="info"><span class="info-label">Neighborhood</span><span class="info-value">${esc(data.upland_location)}</span></div>`:''}
-       ${data.continent?`<div class="info"><span class="info-label">Continent</span><span class="info-value">${esc(data.continent)}</span></div>`:''}
-     </div>
-     ${data.description?`<section><h2 class="section-title">About this Node</h2><p class="description">${esc(data.description)}</p></section>`:''}
-     ${links.length?`<section class="community"><h2 class="section-title">Community</h2><p>Connect with this Node and join its community.</p><div class="links">${links.join('')}</div></section>`:''}
-   </div>
-   <footer class="footer"><span>Node Hub</span><span>Verified community directory</span></footer>
- </article>`;
-}
-load();
+const SUPABASE_URL="https://ynqtzyzxspoxssjrjeve.supabase.co";const SUPABASE_KEY="sb_publishable_FoDbr9qgVeeIYfzEZNNN9Q_53aHxI2g";const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+function esc(v){return String(v??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#039;')}function safe(v){try{const u=new URL(v);return ['http:','https:'].includes(u.protocol)?esc(u.href):'#'}catch{return '#'}}
+async function load(){const params=new URLSearchParams(location.search),id=params.get('id'),name=params.get('name');if(!id&&!name){document.getElementById('app').innerHTML='<div class="error"><h2>Node not found</h2><p>No Node identifier was provided.</p></div>';return}let q=db.from('nodes').select('*').eq('status','approved');q=id?q.eq('id',id).maybeSingle():q.eq('name',name).maybeSingle();const {data,error}=await q;if(error||!data){document.getElementById('app').innerHTML='<div class="error"><h2>Node not found</h2><p>This Node may not be approved or may no longer exist.</p></div>';return}document.title=`${data.name||'Node'} | Node Hub`;const links=[];if(data.discord_url)links.push(`<a href="${safe(data.discord_url)}" target="_blank" rel="noopener noreferrer">Join Discord</a>`);if(data.telegram_url)links.push(`<a href="${safe(data.telegram_url)}" target="_blank" rel="noopener noreferrer">Join Telegram</a>`);if(data.twitter_url)links.push(`<a href="${safe(data.twitter_url)}" target="_blank" rel="noopener noreferrer">Follow on X</a>`);const logo=data.logo_url?`<img src="${safe(data.logo_url)}" alt="${esc(data.name)}">`:'<div class="placeholder">●</div>';const location=[data.city,data.country].filter(Boolean).map(esc).join(', ');document.getElementById('app').innerHTML=`<article class="profile"><header class="hero"><div class="hero-top"><div class="logo">${logo}</div><div class="identity"><span class="eyebrow">Verified Node</span><h1>${esc(data.name||'Unnamed Node')}</h1><span class="verified">✓ Verified Node</span>${location?`<p class="subtitle">${location}</p>`:''}</div></div></header><div class="content"><div class="info-grid">${location?`<div class="info"><span class="info-label">Location</span><span class="info-value">${location}</span></div>`:''}${data.upland_location?`<div class="info"><span class="info-label">Neighborhood</span><span class="info-value">${esc(data.upland_location)}</span></div>`:''}${data.continent?`<div class="info"><span class="info-label">Continent</span><span class="info-value">${esc(data.continent)}</span></div>`:''}</div>${data.description?`<section><h2 class="section-title">About this Node</h2><p class="description">${esc(data.description)}</p></section>`:''}${links.length?`<section class="community"><h2 class="section-title">Community</h2><p>Connect with this Node and join its community.</p><div class="links">${links.join('')}</div></section>`:''}</div><footer class="footer"><span>Node Hub</span><span>Verified community directory</span></footer></article>`}load();
 </script>
 </body>
 </html>

@@ -19,7 +19,6 @@ const continentFilter = document.getElementById("continent-filter");
 
 document.addEventListener("DOMContentLoaded", async () => {
     await initializeAuth();
-    await loadNodes();
     setupSearch();
     setupLanguage();
     setupAuthForms();
@@ -27,6 +26,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     setupNavigation();
     handleRoute();
     window.addEventListener("hashchange", handleRoute);
+
+    // Do not block the page startup while the public directory loads.
+    // This keeps login and navigation responsive.
+    setTimeout(() => {
+        loadNodes();
+    }, 0);
 });
 
 // =====================================================
@@ -43,13 +48,18 @@ async function initializeAuth() {
         currentUser = data.session ? data.session.user : null;
         updateAuthUI();
 
-        db.auth.onAuthStateChange(async (event, session) => {
+        db.auth.onAuthStateChange((event, session) => {
             currentUser = session ? session.user : null;
             updateAuthUI();
 
+            // IMPORTANT: Supabase auth callbacks must not wait for
+            // additional Supabase requests. Doing so can lock the
+            // authentication flow and make login appear frozen.
             if (event === "SIGNED_IN") {
-                await loadNodes();
-                await updateDashboard();
+                setTimeout(() => {
+                    loadNodes();
+                    updateDashboard();
+                }, 0);
             }
 
             if (event === "SIGNED_OUT") {
@@ -209,25 +219,39 @@ async function createProfile(username) {
 async function signIn() {
     const email = document.getElementById("login-email")?.value.trim().toLowerCase() || "";
     const password = document.getElementById("login-password")?.value || "";
+    const button = document.querySelector("#login-form button[type='submit']");
 
     if (!email || !password) {
         alert("Please enter your email and password.");
         return;
     }
 
+    const originalText = button?.textContent || "Sign in";
+
     try {
+        if (button) {
+            button.disabled = true;
+            button.textContent = "Signing in...";
+        }
+
         const { data, error } = await db.auth.signInWithPassword({ email, password });
+
         if (error) {
             alert(error.message);
             return;
         }
+
         currentUser = data.user;
         updateAuthUI();
-        alert("Welcome to Node Hub.");
         window.location.hash = "dashboard";
     } catch (error) {
         console.error("Unexpected login error:", error);
         alert("Unable to sign in.");
+    } finally {
+        if (button) {
+            button.disabled = false;
+            button.textContent = originalText;
+        }
     }
 }
 

@@ -27,8 +27,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     handleRoute();
     window.addEventListener("hashchange", handleRoute);
 
-    // Do not block the page startup while the public directory loads.
-    // This keeps login and navigation responsive.
+    // Keep the initial page responsive while the public directory loads.
     setTimeout(() => {
         loadNodes();
     }, 0);
@@ -52,9 +51,6 @@ async function initializeAuth() {
             currentUser = session ? session.user : null;
             updateAuthUI();
 
-            // IMPORTANT: Supabase auth callbacks must not wait for
-            // additional Supabase requests. Doing so can lock the
-            // authentication flow and make login appear frozen.
             if (event === "SIGNED_IN") {
                 setTimeout(() => {
                     loadNodes();
@@ -352,7 +348,7 @@ function createNodeCard(node) {
         <div class="node-card-content">
             <h3>${escapeHTML(node.name || "Unnamed Node")}</h3>
             <p class="node-location">${escapeHTML(node.city || "")}${node.country ? `, ${escapeHTML(node.country)}` : ""}</p>
-            ${node.upland_location ? `<p class="node-upland-location">Upland: ${escapeHTML(node.upland_location)}</p>` : ""}
+            ${node.upland_location ? `<p class="node-upland-location">Neighborhood: ${escapeHTML(node.upland_location)}</p>` : ""}
             ${node.description ? `<p class="node-description">${escapeHTML(node.description)}</p>` : ""}
             <div class="node-links">
                 ${node.discord_url ? `<a href="${safeURL(node.discord_url)}" target="_blank" rel="noopener noreferrer">Discord</a>` : ""}
@@ -448,7 +444,7 @@ async function showNodeProfile(nodeId) {
                     <span class="eyebrow">VERIFIED NODE</span>
                     <h2>${escapeHTML(node.name)}</h2>
                     <p>${escapeHTML(node.city || "")}${node.country ? `, ${escapeHTML(node.country)}` : ""}</p>
-                    ${node.upland_location ? `<p><strong>Upland Location:</strong> ${escapeHTML(node.upland_location)}</p>` : ""}
+                    ${node.upland_location ? `<p><strong>Neighborhood:</strong> ${escapeHTML(node.upland_location)}</p>` : ""}
                     ${node.description ? `<p>${escapeHTML(node.description)}</p>` : ""}
                     <div class="node-links" style="justify-content:center;display:flex;flex-wrap:wrap;gap:10px;margin-top:20px;">
                         ${node.upland_node_url ? `<a class="button button-primary" href="${safeURL(node.upland_node_url)}" target="_blank" rel="noopener noreferrer">Open Node in Upland</a>` : ""}
@@ -529,9 +525,9 @@ function createDashboard() {
                     <label for="node-country">Country</label>
                     <input type="text" id="node-country" required placeholder="Country">
 
-                    <label for="node-upland-location">Upland Location</label>
-                    <input type="text" id="node-upland-location" placeholder="Example: Chicago, Illinois">
-                    <small>Enter the location or city used by your Node in Upland.</small>
+                    <label for="node-upland-location">Neighborhood</label>
+                    <input type="text" id="node-upland-location" placeholder="Example: Porto, Chicago">
+                    <small>Enter the Neighborhood where your Node is located in Upland.</small>
 
                     <label for="node-upland-url">Upland Node Link</label>
                     <input type="url" id="node-upland-url" name="upland_node_url" placeholder="https://play.upland.me/...">
@@ -620,7 +616,7 @@ async function loadMyNodes() {
                 <div class="node-card-content">
                     <h3>${escapeHTML(node.name)}</h3>
                     <p>${escapeHTML(node.city || "")}, ${escapeHTML(node.country || "")}</p>
-                    ${node.upland_location ? `<p>Upland Location: <strong>${escapeHTML(node.upland_location)}</strong></p>` : ""}
+                    ${node.upland_location ? `<p>Neighborhood: <strong>${escapeHTML(node.upland_location)}</strong></p>` : ""}
                     ${node.upland_node_url ? `<p><a href="${safeURL(node.upland_node_url)}" target="_blank" rel="noopener noreferrer">Open Upland Node Link</a></p>` : ""}
                     <p>Status: <strong>${escapeHTML(node.status || "pending")}</strong></p>
                     ${node.status === "approved" ? `<p><a href="#node/${encodeURIComponent(node.id)}">View public profile</a></p>` : ""}

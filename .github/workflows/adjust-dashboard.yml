@@ -1,0 +1,41 @@
+name: Adjust user dashboard
+
+on:
+  push:
+    paths:
+      - '.github/workflows/adjust-dashboard.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  adjust-dashboard:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Remove account card from user dashboard
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('app.js')
+          text = path.read_text(encoding='utf-8')
+
+          start = '''            <div class="auth-card">\n\n                <span class="eyebrow">\n                    ACCOUNT\n                </span>\n\n                <h3>\n                    Welcome\n                </h3>\n\n                <p id="dashboard-welcome">\n                    Welcome to Node Hub.\n                </p>\n\n                <p id="dashboard-email">\n                    Loading...\n                </p>\n\n                <button\n                    type="button"\n                    class="button button-secondary"\n                    data-action="logout"\n                >\n                    Sign Out\n                </button>\n\n            </div>\n\n\n'''
+
+          if start not in text:
+              raise SystemExit('Dashboard account block not found; no changes made.')
+
+          text = text.replace(start, '', 1)
+          path.write_text(text, encoding='utf-8')
+          PY
+
+      - name: Commit dashboard change
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app.js
+          git diff --cached --quiet && exit 0
+          git commit -m "Simplify user dashboard"
+          git push

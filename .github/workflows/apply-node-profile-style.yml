@@ -1,0 +1,89 @@
+name: Apply Node Profile Style
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  style:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply profile styles
+        run: |
+          if ! grep -q 'NODE PROFILE PROFESSIONAL STYLE' styles.css; then
+            cat >> styles.css <<'CSS'
+
+/* NODE PROFILE PROFESSIONAL STYLE */
+#nodehub-node-profile {
+  padding-top: 70px;
+  padding-bottom: 100px;
+}
+#nodehub-node-profile .container {
+  max-width: 980px;
+}
+#nodehub-node-profile .auth-card {
+  position: relative;
+  overflow: hidden;
+  padding: 56px 48px;
+  border: 1px solid rgba(139,92,246,.22);
+  border-radius: 30px;
+  background: linear-gradient(145deg, rgba(255,255,255,.055), rgba(255,255,255,.018));
+  box-shadow: 0 30px 90px rgba(0,0,0,.35);
+}
+#nodehub-node-profile .auth-card::before {
+  content: "";
+  position: absolute;
+  width: 420px;
+  height: 420px;
+  top: -250px;
+  right: -180px;
+  border-radius: 50%;
+  background: rgba(139,92,246,.12);
+  filter: blur(70px);
+  pointer-events: none;
+}
+#nodehub-node-profile .auth-card > * { position: relative; z-index: 1; }
+#nodehub-node-profile img {
+  width: 180px;
+  height: 180px;
+  padding: 14px;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 28px;
+  background: #0c0c0c;
+  box-shadow: 0 20px 55px rgba(0,0,0,.35);
+}
+#nodehub-node-profile h2 {
+  margin: 10px 0 12px;
+  font-size: clamp(36px,5vw,58px);
+  line-height: 1;
+  letter-spacing: -.045em;
+}
+#nodehub-node-profile .eyebrow { margin-top: 4px; }
+#nodehub-node-profile p {
+  color: var(--text-soft);
+  max-width: 680px;
+  margin: 8px auto;
+}
+#nodehub-node-profile .node-links { margin-top: 30px !important; }
+#nodehub-node-profile .node-links a.button { min-height: 46px; }
+#nodehub-node-profile .node-links a.button-secondary { background: rgba(255,255,255,.035); }
+#nodehub-node-profile a:not(.button) {
+  color: var(--accent-light);
+  transition: color var(--transition);
+}
+#nodehub-node-profile a:not(.button):hover { color: #fff; }
+@media (max-width: 700px) {
+  #nodehub-node-profile { padding-top: 40px; }
+  #nodehub-node-profile .auth-card { padding: 38px 22px; border-radius: 22px; }
+  #nodehub-node-profile img { width: 140px; height: 140px; border-radius: 22px; }
+  #nodehub-node-profile .node-links { flex-direction: column; align-items: stretch; }
+  #nodehub-node-profile .node-links a.button { width: 100%; }
+}
+CSS
+            git config user.name 'nodehubupland'
+            git config user.email 'nodehubupland@gmail.com'
+            git add styles.css
+            git commit -m 'Improve public Node profile design'
+            git push
+          fi

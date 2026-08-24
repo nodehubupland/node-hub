@@ -1,4 +1,4 @@
-/* Node Hub patch: dashboard-only account view */
+/* Node Hub patch: dashboard-only account view + Upland Node Link placement */
 (function () {
     "use strict";
 
@@ -17,9 +17,40 @@
             dashboard.style.display = active ? "block" : "none";
         }
 
-        if (!active) {
-            document.getElementById("nodehub-dashboard-home-link")?.remove();
+        if (active) {
+            hideSiteContent();
+        } else {
+            restoreSiteContent();
         }
+    }
+
+    function hideSiteContent() {
+        const dashboard = document.getElementById("nodehub-dashboard");
+        if (!dashboard) return;
+
+        Array.from(document.body.children).forEach(child => {
+            if (child === dashboard) {
+                child.style.display = "block";
+                return;
+            }
+
+            child.dataset.nodehubOriginalDisplay ??= child.style.display || "";
+            child.style.display = "none";
+        });
+    }
+
+    function restoreSiteContent() {
+        Array.from(document.body.children).forEach(child => {
+            if (child.id === "nodehub-dashboard") {
+                child.style.display = "none";
+                return;
+            }
+
+            if (child.dataset.nodehubOriginalDisplay !== undefined) {
+                child.style.display = child.dataset.nodehubOriginalDisplay;
+                delete child.dataset.nodehubOriginalDisplay;
+            }
+        });
     }
 
     function ensureDashboardControls() {
@@ -47,25 +78,59 @@
         }
     }
 
-    function removeDuplicateUplandField() {
-        document.getElementById("nodehub-upland-link-field")?.remove();
+    function moveUplandNodeLink() {
+        const input = document.getElementById("node-upland-url");
+        if (!input) return;
+
+        const form = input.closest("form");
+        if (!form) return;
+
+        const label = form.querySelector('label[for="node-upland-url"]');
+        const help = input.nextElementSibling;
+        const locationInput = document.getElementById("node-upland-location");
+        const locationHelp = locationInput?.nextElementSibling;
+
+        if (!label) return;
+
+        let wrapper = document.getElementById("nodehub-upland-link-field");
+
+        if (!wrapper) {
+            wrapper = document.createElement("div");
+            wrapper.id = "nodehub-upland-link-field";
+            wrapper.className = "nodehub-upland-link-field";
+        }
+
+        wrapper.appendChild(label);
+        wrapper.appendChild(input);
+        if (help) wrapper.appendChild(help);
+
+        if (locationHelp && locationHelp.parentNode === form) {
+            locationHelp.insertAdjacentElement("afterend", wrapper);
+        } else if (locationInput && locationInput.parentNode === form) {
+            locationInput.insertAdjacentElement("afterend", wrapper);
+        } else {
+            const submit = form.querySelector('button[type="submit"]');
+            if (submit) {
+                form.insertBefore(wrapper, submit);
+            }
+        }
     }
 
     function boot() {
         setDashboardView();
         ensureDashboardControls();
-        removeDuplicateUplandField();
+        moveUplandNodeLink();
 
         window.addEventListener("hashchange", function () {
             setTimeout(setDashboardView, 50);
             setTimeout(ensureDashboardControls, 100);
-            setTimeout(removeDuplicateUplandField, 100);
+            setTimeout(moveUplandNodeLink, 100);
         });
 
         const observer = new MutationObserver(function () {
             setDashboardView();
             ensureDashboardControls();
-            removeDuplicateUplandField();
+            moveUplandNodeLink();
         });
 
         observer.observe(document.body, {
@@ -76,14 +141,8 @@
 
     const style = document.createElement("style");
     style.textContent = `
-        body.nodehub-dashboard-mode > .site-header,
-        body.nodehub-dashboard-mode > main,
-        body.nodehub-dashboard-mode > .site-footer {
-            display: none !important;
-        }
-
         body.nodehub-dashboard-mode {
-            min-height: 100vh;
+            min-height: 100vh !important;
         }
 
         body.nodehub-dashboard-mode #nodehub-dashboard {
@@ -91,8 +150,20 @@
             min-height: 100vh;
         }
 
-        .nodehub-dashboard-home-link {
+        body.nodehub-dashboard-mode .nodehub-dashboard-home-link {
             margin-top: 12px;
+        }
+
+        #nodehub-upland-link-field {
+            display: block;
+            width: 100%;
+        }
+
+        #nodehub-upland-link-field label,
+        #nodehub-upland-link-field input,
+        #nodehub-upland-link-field small {
+            display: block;
+            width: 100%;
         }
     `;
     document.head.appendChild(style);

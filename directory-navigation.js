@@ -278,7 +278,29 @@ function setupUplandNodeSubmit() {
 // INITIALIZE
 // =====================================================
 
-document.addEventListener("DOMContentLoaded", () => {
+function initializeUplandNodeLinkFeature() {
+
     setupUplandNodeLink();
     setupUplandNodeSubmit();
-});
+
+    // The dashboard form is created dynamically by app.js.
+    // Watch for it and initialize the feature immediately when it appears.
+    const observer = new MutationObserver(() => {
+
+        const form =
+            document.getElementById("node-registration-form");
+
+        if (form) {
+            setupUplandNodeLink();
+            setupUplandNodeSubmit();
+        }
+
+    });
+
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true
+    });
+}
+
+document.addEventListener("DOMContentLoaded", initializeUplandNodeLinkFeature);

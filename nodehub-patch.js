@@ -13,13 +13,12 @@
 
         document.body.classList.toggle("nodehub-dashboard-mode", active);
 
-        if (dashboard && active) {
-            dashboard.style.display = "block";
+        if (dashboard) {
+            dashboard.style.display = active ? "block" : "none";
         }
 
         if (!active) {
-            const oldLink = document.getElementById("nodehub-dashboard-home-link");
-            if (oldLink) oldLink.remove();
+            document.getElementById("nodehub-dashboard-home-link")?.remove();
         }
     }
 
@@ -49,8 +48,7 @@
     }
 
     function removeDuplicateUplandField() {
-        const injected = document.getElementById("nodehub-upland-link-field");
-        if (injected) injected.remove();
+        document.getElementById("nodehub-upland-link-field")?.remove();
     }
 
     function boot() {

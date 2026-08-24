@@ -3,62 +3,47 @@
   const translations = {
     "Discover Upland Nodes Around the World":"Descubra Nodes do Upland pelo mundo",
     "Find Nodes, connect with communities, discover their locations, and explore the people building Upland communities around the world.":"Encontre Nodes, conecte-se com comunidades, descubra suas localizações e conheça as pessoas que constroem comunidades no Upland pelo mundo.",
-    "Explore Nodes":"Explorar Nodes","Submit a Node":"Cadastrar um Node","DIRECTORY":"DIRETÓRIO","Discover Nodes and their communities around the world.":"Descubra Nodes e suas comunidades pelo mundo.","All continents":"Todos os continentes","Search Nodes...":"Buscar Nodes...","WORLD MAP":"MAPA MUNDIAL","Find Nodes Across Upland":"Encontre Nodes pelo Upland","Explore Node locations around the world.":"Explore localizações de Nodes pelo mundo.","Node Hub World Map":"Mapa Mundial do Node Hub","Loading...":"Carregando...","Loading Nodes...":"Carregando Nodes...","Connecting to the Node Hub directory.":"Conectando ao diretório Node Hub.","Loading approved Nodes...":"Carregando Nodes aprovados...","GROW THE DIRECTORY":"EXPANDA O DIRETÓRIO","Have a Node?":"Você tem um Node?","Register your Node for free. Your submission will be reviewed by the Node Hub team before appearing in the public directory.":"Cadastre seu Node gratuitamente. O cadastro será analisado pela equipe Node Hub antes de aparecer no diretório público.","Register your Node":"Cadastrar seu Node","Node registration is available through your Node Hub account.":"O cadastro de Node está disponível pela sua conta Node Hub.","ABOUT NODE HUB":"SOBRE O NODE HUB","One place to discover Node communities.":"Um só lugar para descobrir comunidades de Nodes.","Verified Information":"Informações verificadas","Global Community":"Comunidade global","Connect":"Conecte-se","SUPPORT NODE HUB":"APOIE O NODE HUB","Help keep the project free.":"Ajude a manter o projeto gratuito.","Node Hub is being built as a free community platform. If you want to help with its maintenance and future development, you can support us.":"O Node Hub está sendo construído como uma plataforma comunitária gratuita. Se quiser ajudar na manutenção e no desenvolvimento futuro, você pode apoiar o projeto.","Contact Support":"Contatar suporte","Donate / Buy Me a Coffee":"Doar / Comprar um café","Support Node Hub":"Apoiar o Node Hub","ROADMAP":"ROADMAP","Node Hub Evolution":"Evolução do Node Hub","The platform will continue to evolve with the community.":"A plataforma continuará evoluindo com a comunidade.","Node Directory":"Diretório de Nodes","Community":"Comunidade","Ecosystem":"Ecossistema","Coming soon.":"Em breve.","Future development.":"Desenvolvimento futuro.","Sign in":"Entrar","Create an Account":"Criar uma conta","About":"Sobre","Support":"Suporte","Nodes":"Nodes","Map":"Mapa","Roadmap":"Roadmap","Upland Community Directory":"Diretório de comunidades do Upland","Email":"E-mail","Password":"Senha","Username":"Nome de usuário","Function":"Função","Dashboard":"Painel","Sign out":"Sair","ACCOUNT INFORMATION":"INFORMAÇÕES DA CONTA","NODE HUB ACCOUNT":"CONTA NODE HUB","YOUR NODES":"SEUS NODES","My Nodes":"Meus Nodes","No Nodes registered yet.":"Nenhum Node cadastrado ainda.","Use Register My Node to submit your first Node.":"Use Cadastrar seu Node para enviar seu primeiro Node.","NODE REGISTRATION":"CADASTRO DE NODE","Register My Node":"Cadastrar meu Node","Node registration will be submitted for review by the Node Hub team.":"O cadastro será enviado para análise da equipe Node Hub.","Node Name":"Nome do Node","Description":"Descrição","City":"Cidade","Country":"País","Neighborhood":"Bairro","Enter the Neighborhood where your Node is located in Upland.":"Informe o bairro onde seu Node está localizado no Upland.","Continent":"Continente","Select continent":"Selecione o continente","North America":"América do Norte","South America":"América do Sul","Europe":"Europa","Asia":"Ásia","Africa":"África","Oceania":"Oceania","Node Logo":"Logo do Node","X / Twitter":"X / Twitter","Telegram":"Telegram","Discord":"Discord","Cancel":"Cancelar","Submit Node for Review":"Enviar Node para análise","NEW TO NODE HUB?":"NOVO NO NODE HUB?","Minimum 8 characters":"Mínimo de 8 caracteres","Your username":"Seu nome de usuário","Your password":"Sua senha","Your Node":"Seu Node","Not signed in":"Não conectado","Need help with your account?":"Precisa de ajuda com sua conta?","Contact Node Hub":"Contatar Node Hub","Leader information":"Informações do líder","Worldwide directory":"Diretório mundial","Manual verification":"Verificação manual","Verified Node profiles":"Perfis de Nodes verificados","Node administrator dashboard":"Painel do administrador do Node","Node logo and images":"Logo e imagens do Node","Discord and social links":"Discord e links sociais","Node location":"Localização do Node","World Map":"Mapa Mundial","Search and filtering":"Busca e filtros","Mobile responsive interface":"Interface responsiva para celular","Advanced Node statistics":"Estatísticas avançadas dos Nodes","Community features":"Recursos da comunidade","Node activity":"Atividade do Node","Media galleries":"Galerias de mídia","Improved map":"Mapa aprimorado","Node discovery tools":"Ferramentas de descoberta de Nodes","Community interaction":"Interação da comunidade","Featured Nodes":"Nodes em destaque","Expanded integrations":"Integrações ampliadas","Advanced discovery":"Descoberta avançada","Community tools":"Ferramentas da comunidade","External Upland integrations":"Integrações externas com Upland","Advanced Node analytics":"Análises avançadas de Nodes","Community growth tools":"Ferramentas de crescimento da comunidade"
+    "Explore Nodes":"Explorar Nodes","Submit a Node":"Cadastrar um Node","DIRECTORY":"DIRETÓRIO","Discover Nodes and their communities around the world.":"Descubra Nodes e suas comunidades pelo mundo.","All continents":"Todos os continentes","Search Nodes...":"Buscar Nodes...","WORLD MAP":"MAPA MUNDIAL","Find Nodes Across Upland":"Encontre Nodes pelo Upland","Explore Node locations around the world.":"Explore localizações de Nodes pelo mundo.","Node Hub World Map":"Mapa Mundial do Node Hub","Loading...":"Carregando...","Loading Nodes...":"Carregando Nodes...","Connecting to the Node Hub directory.":"Conectando ao diretório Node Hub.","Loading approved Nodes...":"Carregando Nodes aprovados...","GROW THE DIRECTORY":"EXPANDA O DIRETÓRIO","Have a Node?":"Você tem um Node?","Register your Node for free. Your submission will be reviewed by the Node Hub team before appearing in the public directory.":"Cadastre seu Node gratuitamente. O cadastro será analisado pela equipe Node Hub antes de aparecer no diretório público.","Register your Node":"Cadastrar seu Node","Node registration is available through your Node Hub account.":"O cadastro de Node está disponível pela sua conta Node Hub.","ABOUT NODE HUB":"SOBRE O NODE HUB","One place to discover Node communities.":"Um só lugar para descobrir comunidades de Nodes.","Verified Information":"Informações verificadas","Global Community":"Comunidade global","Connect":"Conecte-se","SUPPORT NODE HUB":"APOIE O NODE HUB","Help keep the project free.":"Ajude a manter o projeto gratuito.","Node Hub is being built as a free community platform. If you want to help with its maintenance and future development, you can support us.":"O Node Hub está sendo construído como uma plataforma comunitária gratuita. Se quiser ajudar na manutenção e no desenvolvimento futuro, você pode apoiar o projeto.","Donate / Buy Me a Coffee":"Doar / Comprar um café","ROADMAP":"ROADMAP","Node Hub Evolution":"Evolução do Node Hub","The platform will continue to evolve with the community.":"A plataforma continuará evoluindo com a comunidade.","Node Directory":"Diretório de Nodes","Community":"Comunidade","Ecosystem":"Ecossistema","Coming soon.":"Em breve.","Future development.":"Desenvolvimento futuro.","Sign in":"Entrar","Create an Account":"Criar uma conta","About":"Sobre","Support":"Suporte","Nodes":"Nodes","Map":"Mapa","Roadmap":"Roadmap","Upland Community Directory":"Diretório de comunidades do Upland","Email":"E-mail","Password":"Senha","Username":"Nome de usuário","Function":"Função","Dashboard":"Painel","Sign out":"Sair","ACCOUNT INFORMATION":"INFORMAÇÕES DA CONTA","NODE HUB ACCOUNT":"CONTA NODE HUB","YOUR NODES":"SEUS NODES","My Nodes":"Meus Nodes","No Nodes registered yet.":"Nenhum Node cadastrado ainda.","Use Register My Node to submit your first Node.":"Use Cadastrar seu Node para enviar seu primeiro Node.","NODE REGISTRATION":"CADASTRO DE NODE","Register My Node":"Cadastrar meu Node","Node registration will be submitted for review by the Node Hub team.":"O cadastro será enviado para análise da equipe Node Hub.","Node Name":"Nome do Node","Description":"Descrição","City":"Cidade","Country":"País","Neighborhood":"Bairro","Enter the Neighborhood where your Node is located in Upland.":"Informe o bairro onde seu Node está localizado no Upland.","Continent":"Continente","Select continent":"Selecione o continente","North America":"América do Norte","South America":"América do Sul","Europe":"Europa","Asia":"Ásia","Africa":"África","Oceania":"Oceania","Node Logo":"Logo do Node","X / Twitter":"X / Twitter","Telegram":"Telegram","Discord":"Discord","Cancel":"Cancelar","Submit Node for Review":"Enviar Node para análise","NEW TO NODE HUB?":"NOVO NO NODE HUB?","Minimum 8 characters":"Mínimo de 8 caracteres","Your username":"Seu nome de usuário","Your password":"Sua senha","Not signed in":"Não conectado","Need help with your account?":"Precisa de ajuda com sua conta?","Contact Node Hub":"Contatar Node Hub","Leader information":"Informações do líder","Worldwide directory":"Diretório mundial","Manual verification":"Verificação manual","Verified Node profiles":"Perfis de Nodes verificados","Node administrator dashboard":"Painel do administrador do Node","Node logo and images":"Logo e imagens do Node","Discord and social links":"Discord e links sociais","Node location":"Localização do Node","World Map":"Mapa Mundial","Search and filtering":"Busca e filtros","Mobile responsive interface":"Interface responsiva para celular","Advanced Node statistics":"Estatísticas avançadas dos Nodes","Community features":"Recursos da comunidade","Node activity":"Atividade do Node","Media galleries":"Galerias de mídia","Improved map":"Mapa aprimorado","Node discovery tools":"Ferramentas de descoberta de Nodes","Community interaction":"Interação da comunidade","Featured Nodes":"Nodes em destaque","Expanded integrations":"Integrações ampliadas","Advanced discovery":"Descoberta avançada","Community tools":"Ferramentas da comunidade","External Upland integrations":"Integrações externas com Upland","Advanced Node analytics":"Análises avançadas de Nodes","Community growth tools":"Ferramentas de crescimento da comunidade"
   };
 
-  let applying = false;
-  let scheduled = false;
-
   function applyNodeHubLanguage() {
-    if (applying) return;
     const lang = localStorage.getItem("nodehub-language") || "en-US";
     document.documentElement.lang = lang;
-    const map = lang === "pt-BR" ? translations : null;
-    if (!map || !document.body) return;
-    applying = true;
-    try {
-      const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
-      const textNodes = [];
-      while (walker.nextNode()) textNodes.push(walker.currentNode);
-      textNodes.forEach(node => {
-        const value = node.nodeValue.trim();
-        if (map[value]) node.nodeValue = node.nodeValue.replace(value, map[value]);
-      });
-      document.querySelectorAll("input[placeholder], textarea[placeholder]").forEach(el => {
-        if (map[el.placeholder]) el.placeholder = map[el.placeholder];
-      });
-      document.querySelectorAll("option").forEach(el => {
-        const value = el.textContent.trim();
-        if (map[value]) el.textContent = map[value];
-      });
-    } finally {
-      applying = false;
-    }
-  }
-
-  function scheduleLanguageUpdate() {
-    if (scheduled) return;
-    scheduled = true;
-    setTimeout(() => {
-      scheduled = false;
-      applyNodeHubLanguage();
-    }, 50);
+    if (lang !== "pt-BR" || !document.body) return;
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    const nodes = [];
+    while (walker.nextNode()) nodes.push(walker.currentNode);
+    nodes.forEach(node => {
+      const value = node.nodeValue.trim();
+      if (translations[value]) node.nodeValue = node.nodeValue.replace(value, translations[value]);
+    });
+    document.querySelectorAll("input[placeholder], textarea[placeholder]").forEach(el => {
+      if (translations[el.placeholder]) el.placeholder = translations[el.placeholder];
+    });
+    document.querySelectorAll("option").forEach(el => {
+      const value = el.textContent.trim();
+      if (translations[value]) el.textContent = translations[value];
+    });
   }
 
   window.applyNodeHubLanguage = applyNodeHubLanguage;
 
   document.addEventListener("change", function (event) {
-    if (event.target && event.target.id === "language-selector") {
-      localStorage.setItem("nodehub-language", event.target.value);
-      scheduleLanguageUpdate();
+    if (!event.target || event.target.id !== "language-selector") return;
+    const lang = event.target.value || "en-US";
+    localStorage.setItem("nodehub-language", lang);
+    if (lang === "en-US") {
+      window.location.reload();
+      return;
     }
+    applyNodeHubLanguage();
   });
 
   document.addEventListener("DOMContentLoaded", function () {
-    scheduleLanguageUpdate();
-    const observer = new MutationObserver(() => {
-      if (localStorage.getItem("nodehub-language") === "pt-BR") scheduleLanguageUpdate();
-    });
-    observer.observe(document.body, { childList: true, subtree: true });
+    const saved = localStorage.getItem("nodehub-language");
+    if (!saved) localStorage.setItem("nodehub-language", "en-US");
+    const selector = document.getElementById("language-selector");
+    if (selector) selector.value = saved === "pt-BR" ? "pt-BR" : "en-US";
+    if (saved === "pt-BR") setTimeout(applyNodeHubLanguage, 100);
   });
 })();

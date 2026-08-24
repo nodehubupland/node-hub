@@ -1,6 +1,12 @@
-/* Node Hub patch: dashboard-only account view + Upland Node Link placement */
+/* Node Hub patch: dashboard-only account view + Upland Node Link placement + login repair */
 (function () {
     "use strict";
+
+    const SUPABASE_URL = "https://ynqtzyzxspoxssjrjeve.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_FoDbr9qgVeeIYfzEZNNN9Q_53aHxI2g";
+    const authClient = window.supabase?.createClient
+        ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
+        : null;
 
     function isDashboardRoute() {
         const hash = (window.location.hash || "").toLowerCase();
@@ -110,13 +116,70 @@
             locationInput.insertAdjacentElement("afterend", wrapper);
         } else {
             const submit = form.querySelector('button[type="submit"]');
-            if (submit) {
-                form.insertBefore(wrapper, submit);
-            }
+            if (submit) form.insertBefore(wrapper, submit);
         }
     }
 
+    function setupLoginRepair() {
+        const form = document.getElementById("login-form");
+        if (!form || form.dataset.nodehubLoginRepair === "true" || !authClient) return;
+
+        form.dataset.nodehubLoginRepair = "true";
+
+        form.addEventListener("submit", async function (event) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+
+            const emailInput = document.getElementById("login-email");
+            const passwordInput = document.getElementById("login-password");
+            const button = form.querySelector('button[type="submit"]');
+
+            const email = emailInput?.value.trim().toLowerCase() || "";
+            const password = passwordInput?.value || "";
+
+            if (!email || !password) {
+                alert("Please enter your email and password.");
+                return;
+            }
+
+            const originalText = button?.textContent || "Sign in";
+            if (button) {
+                button.disabled = true;
+                button.textContent = "Signing in...";
+            }
+
+            try {
+                const { data, error } = await authClient.auth.signInWithPassword({
+                    email,
+                    password
+                });
+
+                if (error) {
+                    console.error("Node Hub login error:", error);
+                    alert(error.message || "Unable to sign in.");
+                    return;
+                }
+
+                if (!data?.session || !data?.user) {
+                    alert("Login could not be completed. Please try again.");
+                    return;
+                }
+
+                window.location.hash = "dashboard";
+            } catch (error) {
+                console.error("Node Hub unexpected login error:", error);
+                alert(error?.message || "Unable to sign in.");
+            } finally {
+                if (button) {
+                    button.disabled = false;
+                    button.textContent = originalText;
+                }
+            }
+        }, true);
+    }
+
     function boot() {
+        setupLoginRepair();
         setDashboardView();
         ensureDashboardControls();
         moveUplandNodeLink();
@@ -125,12 +188,14 @@
             setTimeout(setDashboardView, 50);
             setTimeout(ensureDashboardControls, 100);
             setTimeout(moveUplandNodeLink, 100);
+            setTimeout(setupLoginRepair, 100);
         });
 
         const observer = new MutationObserver(function () {
             setDashboardView();
             ensureDashboardControls();
             moveUplandNodeLink();
+            setupLoginRepair();
         });
 
         observer.observe(document.body, {

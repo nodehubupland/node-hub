@@ -1,0 +1,12 @@
+/* Node Hub V1 compact layout */
+:root{--header-height:68px}
+.section{padding:64px 0}
+.section-heading{margin-bottom:30px}
+.hero{min-height:auto;padding:0}
+.hero-content{min-height:calc(100vh - var(--header-height));padding-top:52px;padding-bottom:52px}
+.hero-content h1{margin-bottom:20px}
+.hero-description{margin-bottom:26px}
+.directory-toolbar{margin-bottom:22px}
+.support-actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:22px}
+.support-email{margin-top:14px}
+@media(max-width:768px){.section{padding:48px 0}.hero-content{min-height:auto;padding-top:48px;padding-bottom:48px}.section-heading{margin-bottom:24px}}

@@ -3,7 +3,7 @@
 // Supabase + Authentication + Dashboard + Node Directory
 // =====================================================
 const SUPABASE_URL = "https://ynqtzyzxspoxssjrjeve.supabase.co";
-const SUPABASE_KEY = "sb_publishable_FoDbr9qVeeIYfzEZNNN9Q_53aHxI2g";
+const SUPABASE_KEY = "sb_publishable_FoDbr9qgVeeIYfzEZNNN9Q_53aHxI2g";
 const { createClient } = supabase;
 const db = createClient(SUPABASE_URL, SUPABASE_KEY);
 let currentUser = null;

@@ -18,6 +18,41 @@
         .account-profile-item { padding:14px 16px; border:1px solid rgba(255,255,255,.08); border-radius:12px; background:rgba(255,255,255,.025); }
         .account-profile-item small { display:block; opacity:.65; margin-bottom:5px; }
         @media (max-width:760px){ .account-profile-grid{grid-template-columns:1fr;} }
+
+        /* DIRECTORY: one consistent image frame for every Node */
+        .node-card .node-card-image {
+            width: 100%;
+            height: 240px;
+            min-height: 240px;
+            margin: -28px -28px 24px;
+            width: calc(100% + 56px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            background: #0d0d0d;
+            border-bottom: 1px solid var(--border);
+        }
+        .node-card .node-card-image img {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            padding: 18px;
+        }
+        .node-card .node-card-placeholder {
+            color: var(--accent-light);
+            font-size: 34px;
+        }
+        @media (max-width:760px) {
+            .node-card .node-card-image {
+                height: 210px;
+                min-height: 210px;
+                margin: -28px -28px 22px;
+                width: calc(100% + 56px);
+            }
+            .node-card .node-card-image img { padding: 16px; }
+        }
     `;
     document.head.appendChild(style);
 
@@ -25,11 +60,9 @@
         if (!currentUser) return;
         const dashboard = document.getElementById("nodehub-dashboard");
         if (!dashboard) return;
-
         const oldCards = dashboard.querySelectorAll(".account-profile-card");
         oldCards.forEach((card, index) => { if (index > 0) card.remove(); });
         if (dashboard.querySelector("#account-profile-card")) return;
-
         try {
             const { data: profile, error } = await db.from("profiles").select("username, role").eq("id", currentUser.id).maybeSingle();
             if (error) console.warn("Profile lookup:", error.message);

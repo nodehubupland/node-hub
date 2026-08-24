@@ -1,7 +1,9 @@
 // =====================================================
 // NODE HUB
 // Supabase + Authentication + Dashboard + Node Upload
+// Public Node Profiles
 // =====================================================
+
 
 // =====================================================
 // SUPABASE
@@ -219,6 +221,34 @@ function handleRoute() {
             .toLowerCase();
 
 
+    // =================================================
+    // PUBLIC NODE PROFILE
+    // =================================================
+
+    if (
+        hash.startsWith("node/")
+    ) {
+
+        const nodeId =
+            decodeURIComponent(
+                hash.substring(5)
+            );
+
+
+        showNodeProfile(
+            nodeId
+        );
+
+
+        return;
+
+    }
+
+
+    // =================================================
+    // DASHBOARD
+    // =================================================
+
     if (
         hash === "dashboard"
     ) {
@@ -240,6 +270,10 @@ function handleRoute() {
     }
 
 
+    // =================================================
+    // REGISTER
+    // =================================================
+
     if (
         hash === "register"
     ) {
@@ -256,6 +290,7 @@ function handleRoute() {
 
         showDashboard();
 
+
         setTimeout(
             () => {
 
@@ -263,6 +298,7 @@ function handleRoute() {
                     document.getElementById(
                         "dashboard-node-form"
                     );
+
 
                 if (form) {
 
@@ -276,10 +312,15 @@ function handleRoute() {
             100
         );
 
+
         return;
 
     }
 
+
+    // =================================================
+    // LOGIN
+    // =================================================
 
     if (
         hash === "login"
@@ -908,7 +949,9 @@ async function loadNodes() {
             data || [];
 
 
-        renderNodes(nodes);
+        renderNodes(
+            nodes
+        );
 
     }
 
@@ -1137,6 +1180,22 @@ function createNodeCard(
                     Verified Node
                 </span>
 
+                ${
+                    node.id
+                        ? `
+                            <button
+                                type="button"
+                                class="button button-secondary node-view-button"
+                                data-node-id="${escapeHTML(
+                                    node.id
+                                )}"
+                            >
+                                View Node
+                            </button>
+                        `
+                        : ""
+                }
+
             </div>
 
         </div>
@@ -1144,7 +1203,480 @@ function createNodeCard(
     `;
 
 
+    const viewButton =
+        article.querySelector(
+            ".node-view-button"
+        );
+
+
+    if (viewButton) {
+
+        viewButton.addEventListener(
+            "click",
+            event => {
+
+                event.preventDefault();
+
+                event.stopPropagation();
+
+
+                const nodeId =
+                    viewButton.getAttribute(
+                        "data-node-id"
+                    );
+
+
+                if (!nodeId) {
+                    return;
+                }
+
+
+                window.location.hash =
+                    `node/${encodeURIComponent(
+                        nodeId
+                    )}`;
+
+            }
+        );
+
+    }
+
+
     return article;
+
+}
+
+
+// =====================================================
+// PUBLIC NODE PROFILE
+// =====================================================
+
+function showNodeProfile(
+    nodeId
+) {
+
+    const node =
+        nodes.find(
+            item =>
+                String(item.id) ===
+                String(nodeId)
+        );
+
+
+    if (!node) {
+
+        showNodeProfileNotFound();
+
+        return;
+
+    }
+
+
+    let profile =
+        document.getElementById(
+            "nodehub-node-profile"
+        );
+
+
+    if (!profile) {
+
+        profile =
+            document.createElement(
+                "section"
+            );
+
+
+        profile.id =
+            "nodehub-node-profile";
+
+
+        profile.className =
+            "section section-alt";
+
+
+        document.body.appendChild(
+            profile
+        );
+
+    }
+
+
+    const logo =
+        node.logo_url ||
+        node.image_url ||
+        "";
+
+
+    profile.innerHTML = `
+
+        <div class="container">
+
+            <div class="section-heading">
+
+                <span class="eyebrow">
+                    VERIFIED NODE
+                </span>
+
+                <h2>
+                    ${escapeHTML(
+                        node.name ||
+                        "Unnamed Node"
+                    )}
+                </h2>
+
+                <p>
+                    Public Node profile
+                </p>
+
+            </div>
+
+
+            <div class="auth-card node-profile-card">
+
+                ${
+                    logo
+                        ? `
+                            <div class="node-profile-image">
+
+                                <img
+                                    src="${escapeHTML(
+                                        logo
+                                    )}"
+                                    alt="${escapeHTML(
+                                        node.name ||
+                                        "Node"
+                                    )}"
+                                >
+
+                            </div>
+                        `
+                        : `
+                            <div class="node-profile-placeholder">
+                                ●
+                            </div>
+                        `
+                }
+
+
+                <div class="node-profile-content">
+
+                    <div class="node-profile-header">
+
+                        <span class="verified-badge">
+                            Verified Node
+                        </span>
+
+                        <h3>
+                            ${escapeHTML(
+                                node.name ||
+                                "Unnamed Node"
+                            )}
+                        </h3>
+
+                    </div>
+
+
+                    <div class="node-profile-location">
+
+                        <p>
+
+                            <strong>
+                                Location:
+                            </strong>
+
+                            ${escapeHTML(
+                                node.city || ""
+                            )}
+
+                            ${
+                                node.country
+                                    ? `, ${escapeHTML(
+                                        node.country
+                                    )}`
+                                    : ""
+                            }
+
+                        </p>
+
+
+                        ${
+                            node.continent
+                                ? `
+                                    <p>
+
+                                        <strong>
+                                            Continent:
+                                        </strong>
+
+                                        ${escapeHTML(
+                                            node.continent
+                                        )}
+
+                                    </p>
+                                `
+                                : ""
+                        }
+
+
+                        ${
+                            node.upland_location
+                                ? `
+                                    <p>
+
+                                        <strong>
+                                            Upland:
+                                        </strong>
+
+                                        ${escapeHTML(
+                                            node.upland_location
+                                        )}
+
+                                    </p>
+                                `
+                                : ""
+                        }
+
+                    </div>
+
+
+                    ${
+                        node.description
+                            ? `
+                                <div class="node-profile-description">
+
+                                    <h4>
+                                        About this Node
+                                    </h4>
+
+                                    <p>
+                                        ${escapeHTML(
+                                            node.description
+                                        )}
+                                    </p>
+
+                                </div>
+                            `
+                            : ""
+                    }
+
+
+                    <div class="node-profile-community">
+
+                        <h4>
+                            Community
+                        </h4>
+
+                        <div class="node-links">
+
+                            ${
+                                node.discord_url
+                                    ? `
+                                        <a
+                                            href="${safeURL(
+                                                node.discord_url
+                                            )}"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            class="button button-primary"
+                                        >
+                                            Join Discord
+                                        </a>
+                                    `
+                                    : ""
+                            }
+
+
+                            ${
+                                node.telegram_url
+                                    ? `
+                                        <a
+                                            href="${safeURL(
+                                                node.telegram_url
+                                            )}"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            class="button button-secondary"
+                                        >
+                                            Join Telegram
+                                        </a>
+                                    `
+                                    : ""
+                            }
+
+
+                            ${
+                                node.twitter_url
+                                    ? `
+                                        <a
+                                            href="${safeURL(
+                                                node.twitter_url
+                                            )}"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            class="button button-secondary"
+                                        >
+                                            X / Twitter
+                                        </a>
+                                    `
+                                    : ""
+                            }
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="node-profile-actions">
+
+                        <button
+                            type="button"
+                            class="button button-secondary"
+                            id="back-to-node-directory"
+                        >
+                            Back to Node Directory
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    `;
+
+
+    profile.style.display =
+        "block";
+
+
+    const backButton =
+        document.getElementById(
+            "back-to-node-directory"
+        );
+
+
+    if (backButton) {
+
+        backButton.addEventListener(
+            "click",
+            () => {
+
+                window.location.hash =
+                    "home";
+
+            }
+        );
+
+    }
+
+
+    profile.scrollIntoView({
+        behavior: "smooth"
+    });
+
+}
+
+
+// =====================================================
+// NODE PROFILE NOT FOUND
+// =====================================================
+
+function showNodeProfileNotFound() {
+
+    let profile =
+        document.getElementById(
+            "nodehub-node-profile"
+        );
+
+
+    if (!profile) {
+
+        profile =
+            document.createElement(
+                "section"
+            );
+
+
+        profile.id =
+            "nodehub-node-profile";
+
+
+        profile.className =
+            "section section-alt";
+
+
+        document.body.appendChild(
+            profile
+        );
+
+    }
+
+
+    profile.innerHTML = `
+
+        <div class="container">
+
+            <div class="auth-card">
+
+                <span class="eyebrow">
+                    NODE HUB
+                </span>
+
+                <h2>
+                    Node not found
+                </h2>
+
+                <p>
+                    This Node does not exist,
+                    is no longer available,
+                    or has not been approved.
+                </p>
+
+                <button
+                    type="button"
+                    class="button button-primary"
+                    id="node-profile-back"
+                >
+                    Back to Node Directory
+                </button>
+
+            </div>
+
+        </div>
+
+    `;
+
+
+    profile.style.display =
+        "block";
+
+
+    const backButton =
+        document.getElementById(
+            "node-profile-back"
+        );
+
+
+    if (backButton) {
+
+        backButton.addEventListener(
+            "click",
+            () => {
+
+                window.location.hash =
+                    "home";
+
+            }
+        );
+
+    }
+
+
+    profile.scrollIntoView({
+        behavior: "smooth"
+    });
 
 }
 

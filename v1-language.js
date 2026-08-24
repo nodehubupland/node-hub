@@ -12,7 +12,7 @@
     document.querySelectorAll("option").forEach(el=>{const value=el.textContent.trim();if(translations[value])el.textContent=translations[value];});
   }
   window.applyNodeHubLanguage=applyNodeHubLanguage;
-  document.addEventListener("change",event=>{if(!event.target||event.target.id!=="language-selector")return;const lang=event.target.value||"en-US";localStorage.setItem("nodehub-language",lang);if(lang==="en-US"){window.location.reload();return;}applyNodeHubLanguage();});
+  document.addEventListener("change",event=>{if(!event.target||event.target.id!=="language-selector")return;const lang=event.target.value||"en-US";localStorage.setItem("nodehub-language",lang);if(lang==="en-US"){window.location.reload();return;}applyNodeHubLanguage();window.applyDashboardLanguage?.();});
   document.addEventListener("click",async event=>{
     const link=event.target.closest("#forgot-password-link");
     if(!link)return;
@@ -28,5 +28,66 @@
       alert("Password recovery instructions were sent to your email.");
     }catch(error){console.error(error);alert("Unable to send password recovery instructions.");}
   },true);
+
+  const dashboardText={
+    en:{eyebrow:"NODE HUB ACCOUNT",title:"Dashboard",intro:"Manage your Node Hub account and submit your Node for review.",account:"ACCOUNT INFORMATION",username:"Username",email:"Email",role:"Function",nodes:"YOUR NODES",myNodes:"My Nodes",empty:"No Nodes registered yet.",emptyHelp:"Use Register My Node to submit your first Node.",registration:"NODE REGISTRATION",register:"Register My Node",review:"Node registration will be submitted for review by the Node Hub team.",name:"Node Name",description:"Description",city:"City",country:"Country",neighborhood:"Neighborhood",neighborhoodHelp:"Enter the Neighborhood where your Node is located in Upland.",continent:"Continent",select:"Select continent",logo:"Node Logo",discord:"Discord",twitter:"X / Twitter",telegram:"Telegram",submit:"Submit Node for Review",cancel:"Cancel",signout:"Sign out",loading:"Loading your Nodes...",pending:"Pending review",approved:"Approved",rejected:"Rejected",success:"Node submitted for review.",error:"Unable to submit the Node. Please check the required fields and try again."},
+    pt:{eyebrow:"CONTA NODE HUB",title:"Painel",intro:"Gerencie sua conta Node Hub e envie seu Node para análise.",account:"INFORMAÇÕES DA CONTA",username:"Nome de usuário",email:"E-mail",role:"Função",nodes:"SEUS NODES",myNodes:"Meus Nodes",empty:"Nenhum Node cadastrado ainda.",emptyHelp:"Use Cadastrar meu Node para enviar seu primeiro Node.",registration:"CADASTRO DE NODE",register:"Cadastrar meu Node",review:"O cadastro será enviado para análise da equipe Node Hub.",name:"Nome do Node",description:"Descrição",city:"Cidade",country:"País",neighborhood:"Bairro",neighborhoodHelp:"Informe o bairro onde seu Node está localizado no Upland.",continent:"Continente",select:"Selecione o continente",logo:"Logo do Node",discord:"Discord",twitter:"X / Twitter",telegram:"Telegram",submit:"Enviar Node para análise",cancel:"Cancelar",signout:"Sair",loading:"Carregando seus Nodes...",pending:"Em análise",approved:"Aprovado",rejected:"Rejeitado",success:"Node enviado para análise.",error:"Não foi possível enviar o Node. Verifique os campos obrigatórios e tente novamente."}
+  };
+  function dashboardLang(){return localStorage.getItem("nodehub-language")==="pt-BR"?dashboardText.pt:dashboardText.en;}
+  function applyDashboardLanguage(){if(window.renderNodeHubDashboard)window.renderNodeHubDashboard();}
+  window.applyDashboardLanguage=applyDashboardLanguage;
+
+  async function showDashboard(){
+    if(!window.currentUser)return;
+    setDashboardMode(true);
+    removeDashboard();
+    const section=document.createElement("section");
+    section.id="nodehub-user-dashboard";
+    section.className="section section-alt";
+    document.body.appendChild(section);
+    window.renderNodeHubDashboard=async function(){
+      if(!document.getElementById("nodehub-user-dashboard"))return;
+      const t=dashboardLang();
+      let profile=null;
+      try{const r=await db.from("profiles").select("username,role,email").eq("id",window.currentUser.id).maybeSingle();profile=r.data||null;}catch{}
+      const role=profile?.role||"user";
+      const username=profile?.username||window.currentUser.email?.split("@")[0]||"User";
+      section.innerHTML=`<div class="container" style="max-width:1100px;margin:0 auto;"><div class="section-heading"><span class="eyebrow">${t.eyebrow}</span><h1>${t.title}</h1><p>${t.intro}</p></div><div class="auth-card" style="margin-bottom:24px;"><span class="eyebrow">${t.account}</span><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-top:18px;"><div><small>${t.username}</small><strong style="display:block;margin-top:6px;">${escapeHTML(username)}</strong></div><div><small>${t.email}</small><strong style="display:block;margin-top:6px;word-break:break-word;">${escapeHTML(window.currentUser.email||"")}</strong></div><div><small>${t.role}</small><strong style="display:block;margin-top:6px;text-transform:capitalize;">${escapeHTML(role)}</strong></div></div></div><div class="auth-card" style="margin-bottom:24px;"><span class="eyebrow">${t.nodes}</span><h2>${t.myNodes}</h2><div id="dashboard-node-list" style="margin-top:18px;">${t.loading}</div></div><div class="auth-card" id="dashboard-registration-card"><span class="eyebrow">${t.registration}</span><h2>${t.register}</h2><p>${t.review}</p><form id="dashboard-node-form" style="display:grid;gap:12px;margin-top:20px;"><label>${t.name}<input id="dash-node-name" required></label><label>${t.description}<textarea id="dash-node-description" rows="4"></textarea></label><label>${t.city}<input id="dash-node-city" required></label><label>${t.country}<input id="dash-node-country" required></label><label>${t.neighborhood}<input id="dash-node-neighborhood" required><small style="display:block;margin-top:5px;opacity:.7;">${t.neighborhoodHelp}</small></label><label>${t.continent}<select id="dash-node-continent" required><option value="">${t.select}</option><option value="North America">North America</option><option value="South America">South America</option><option value="Europe">Europe</option><option value="Asia">Asia</option><option value="Africa">Africa</option><option value="Oceania">Oceania</option></select></label><label>${t.logo}<input id="dash-node-logo" type="file" accept="image/png,image/jpeg,image/webp"></label><label>${t.discord}<input id="dash-node-discord" type="url"></label><label>${t.twitter}<input id="dash-node-twitter" type="url"></label><label>${t.telegram}<input id="dash-node-telegram" type="url"></label><div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;"><button class="button button-primary" type="submit">${t.submit}</button><button class="button button-secondary" type="button" id="dashboard-signout">${t.signout}</button></div><p id="dashboard-form-message" style="margin:0;"></p></form></div></div>`;
+      document.getElementById("dashboard-signout")?.addEventListener("click",()=>window.signOut?.());
+      document.getElementById("dashboard-node-form")?.addEventListener("submit",submitDashboardNode);
+      loadDashboardNodes();
+    };
+    await window.renderNodeHubDashboard();
+  }
+  async function loadDashboardNodes(){
+    const box=document.getElementById("dashboard-node-list");
+    if(!box||!window.currentUser)return;
+    const t=dashboardLang();
+    try{
+      const{data,error}=await db.from("nodes").select("id,name,city,country,upland_location,status,created_at").eq("user_id",window.currentUser.id).order("created_at",{ascending:false});
+      if(error)throw error;
+      if(!data?.length){box.innerHTML=`<p>${t.empty}</p><p style="opacity:.7;">${t.emptyHelp}</p>`;return;}
+      box.innerHTML=data.map(n=>{const status=n.status||"pending";const label=status==="approved"?t.approved:status==="rejected"?t.rejected:t.pending;return `<div style="padding:16px 0;border-bottom:1px solid rgba(255,255,255,.08);"><strong>${escapeHTML(n.name||"Node")}</strong><div style="opacity:.75;margin-top:4px;">${escapeHTML(n.city||"")}${n.country?`, ${escapeHTML(n.country)}`:""} · ${escapeHTML(n.upland_location||"")}</div><small style="display:inline-block;margin-top:8px;padding:5px 9px;border-radius:999px;background:rgba(255,255,255,.07);">${label}</small></div>`;}).join("");
+    }catch(error){console.error("Dashboard Nodes:",error);box.innerHTML=`<p>${t.error}</p>`;}
+  }
+  async function submitDashboardNode(event){
+    event.preventDefault();
+    const form=event.currentTarget,button=form.querySelector("button[type='submit']"),message=document.getElementById("dashboard-form-message"),t=dashboardLang();
+    const name=document.getElementById("dash-node-name")?.value.trim()||"",description=document.getElementById("dash-node-description")?.value.trim()||"",city=document.getElementById("dash-node-city")?.value.trim()||"",country=document.getElementById("dash-node-country")?.value.trim()||"",neighborhood=document.getElementById("dash-node-neighborhood")?.value.trim()||"",continent=document.getElementById("dash-node-continent")?.value||"",discord=document.getElementById("dash-node-discord")?.value.trim()||"",twitter=document.getElementById("dash-node-twitter")?.value.trim()||"",telegram=document.getElementById("dash-node-telegram")?.value.trim()||"",file=document.getElementById("dash-node-logo")?.files?.[0];
+    if(button){button.disabled=true;button.textContent=t.loading;}
+    try{
+      let logo_url="";
+      if(file){if(file.size>5*1024*1024)throw new Error("Logo must be 5 MB or smaller.");const safeName=file.name.replace(/[^a-zA-Z0-9._-]/g,"-");const path=`${window.currentUser.id}/${Date.now()}-${safeName}`;const upload=await db.storage.from("node-images").upload(path,file,{upsert:false,contentType:file.type});if(upload.error)throw upload.error;const publicUrl=db.storage.from("node-images").getPublicUrl(path);logo_url=publicUrl.data.publicUrl;}
+      const payload={user_id:window.currentUser.id,name,description,city,country,upland_location:neighborhood,continent,logo_url,discord_url:discord,twitter_url:twitter,telegram_url:telegram,status:"pending"};
+      const{error}=await db.from("nodes").insert(payload);if(error)throw error;
+      message.textContent=t.success;message.style.opacity=".85";form.reset();await loadDashboardNodes();
+    }catch(error){console.error("Node submission:",error);message.textContent=error?.message||t.error;message.style.opacity=".85";}
+    finally{if(button){button.disabled=false;button.textContent=t.submit;}}
+  }
+  function removeDashboard(){document.getElementById("nodehub-user-dashboard")?.remove();window.renderNodeHubDashboard=null;setDashboardMode(false);}
+  window.showDashboard=showDashboard;
+  window.removeDashboard=removeDashboard;
+  window.updateDashboard=()=>{if(document.getElementById("nodehub-user-dashboard"))showDashboard();};
+
   document.addEventListener("DOMContentLoaded",()=>{const saved=localStorage.getItem("nodehub-language");if(!saved)localStorage.setItem("nodehub-language","en-US");const selector=document.getElementById("language-selector");if(selector)selector.value=saved==="pt-BR"?"pt-BR":"en-US";if(saved==="pt-BR")setTimeout(applyNodeHubLanguage,100);const observer=new MutationObserver(()=>{if(localStorage.getItem("nodehub-language")==="pt-BR")applyNodeHubLanguage();});observer.observe(document.body,{childList:true,subtree:true});});
 })();

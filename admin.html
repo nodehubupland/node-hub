@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Node Hub | Admin Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        .admin-wrap { padding: 48px 0 80px; }
+        .admin-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:18px; margin:24px 0; }
+        .admin-stat { padding:24px; border:1px solid rgba(255,255,255,.08); border-radius:16px; background:rgba(255,255,255,.03); }
+        .admin-stat strong { display:block; font-size:32px; margin-top:8px; }
+        .admin-table-wrap { overflow-x:auto; }
+        .admin-table { width:100%; border-collapse:collapse; min-width:900px; }
+        .admin-table th,.admin-table td { padding:14px; text-align:left; border-bottom:1px solid rgba(255,255,255,.08); vertical-align:top; }
+        .admin-table th { font-size:12px; text-transform:uppercase; letter-spacing:.08em; }
+        .admin-actions { display:flex; gap:8px; flex-wrap:wrap; }
+        .admin-actions button { cursor:pointer; }
+        .admin-message { padding:18px; border-radius:14px; margin:18px 0; }
+        .admin-error { background:rgba(180,40,40,.12); }
+        .admin-success { background:rgba(40,160,90,.12); }
+        .admin-muted { opacity:.7; }
+        .status-badge { display:inline-block; padding:5px 9px; border-radius:999px; font-size:12px; text-transform:capitalize; }
+        .status-pending { background:rgba(220,170,40,.15); }
+        .status-approved { background:rgba(40,180,90,.15); }
+        .status-rejected { background:rgba(200,60,60,.15); }
+    </style>
+</head>
+<body>
+<header class="site-header">
+    <div class="container header-inner">
+        <a href="./#home" class="logo"><span class="logo-dot">●</span> NODE HUB</a>
+        <nav class="main-nav">
+            <a href="./#nodes">Nodes</a>
+            <a href="./#home">Site</a>
+            <a href="./#login">Account</a>
+        </nav>
+    </div>
+</header>
+
+<main class="admin-wrap">
+    <div class="container">
+        <div class="section-heading">
+            <span class="eyebrow">NODE HUB ADMIN</span>
+            <h1>Admin Dashboard</h1>
+            <p>Review Node submissions and manage publication status.</p>
+        </div>
+
+        <div id="admin-message" class="admin-message admin-muted">Checking administrator access...</div>
+
+        <section id="admin-content" hidden>
+            <div class="admin-grid">
+                <div class="admin-stat"><span>Pending</span><strong id="pending-count">0</strong></div>
+                <div class="admin-stat"><span>Approved</span><strong id="approved-count">0</strong></div>
+                <div class="admin-stat"><span>Rejected</span><strong id="rejected-count">0</strong></div>
+                <div class="admin-stat"><span>My role</span><strong id="admin-role">-</strong></div>
+            </div>
+
+            <div class="auth-card">
+                <div style="display:flex;justify-content:space-between;gap:16px;align-items:center;flex-wrap:wrap;">
+                    <div>
+                        <span class="eyebrow">NODE REVIEW</span>
+                        <h2>Submitted Nodes</h2>
+                    </div>
+                    <button id="refresh-nodes" type="button" class="button button-secondary">Refresh</button>
+                </div>
+                <div class="admin-table-wrap">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Node</th>
+                                <th>Location</th>
+                                <th>Upland</th>
+                                <th>Status</th>
+                                <th>Submitted</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-node-list"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="auth-card" style="margin-top:24px;">
+                <span class="eyebrow">ACCOUNT</span>
+                <p id="admin-email"></p>
+                <button id="sign-out" type="button" class="button button-secondary">Sign Out</button>
+            </div>
+        </section>
+    </div>
+</main>
+
+<script>
+const SUPABASE_URL = "https://ynqtzyzxspoxssjrjeve.supabase.co";
+const SUPABASE_KEY = "sb_publishable_FoDbr9qgVeeIYfzEZNNN9Q_53aHxI2g";
+const { createClient } = supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+let currentUser = null;
+let currentRole = null;
+
+const message = document.getElementById("admin-message");
+const content = document.getElementById("admin-content");
+
+function escapeHTML(value) {
+    if (value === null || value === undefined) return "";
+    return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+}
+
+function showMessage(text, type = "") {
+    message.textContent = text;
+    message.className = `admin-message ${type}`;
+}
+
+async function initialize() {
+    const { data: sessionData, error: sessionError } = await db.auth.getSession();
+    if (sessionError || !sessionData.session) {
+        showMessage("You must be signed in to access the Admin Dashboard.", "admin-error");
+        return;
+    }
+
+    currentUser = sessionData.session.user;
+
+    const { data: profile, error: profileError } = await db
+        .from("profiles")
+        .select("role")
+        .eq("id", currentUser.id)
+        .maybeSingle();
+
+    if (profileError) {
+        console.error(profileError);
+        showMessage("Admin roles are not configured yet. Run the Admin Setup SQL in Supabase first.", "admin-error");
+        return;
+    }
+
+    currentRole = profile?.role || "user";
+
+    if (!["owner", "admin", "moderator"].includes(currentRole)) {
+        showMessage("Access denied. This account is not an administrator.", "admin-error");
+        return;
+    }
+
+    content.hidden = false;
+    document.getElementById("admin-role").textContent = currentRole;
+    document.getElementById("admin-email").textContent = currentUser.email || "";
+    await loadNodes();
+}
+
+async function loadNodes() {
+    showMessage("Loading Node submissions...");
+
+    const { data, error } = await db
+        .from("nodes")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+    if (error) {
+        console.error(error);
+        showMessage("Unable to load Nodes. Check the Admin RLS policies in Supabase.", "admin-error");
+        return;
+    }
+
+    const nodes = data || [];
+    const pending = nodes.filter(n => n.status === "pending");
+    const approved = nodes.filter(n => n.status === "approved");
+    const rejected = nodes.filter(n => n.status === "rejected");
+
+    document.getElementById("pending-count").textContent = pending.length;
+    document.getElementById("approved-count").textContent = approved.length;
+    document.getElementById("rejected-count").textContent = rejected.length;
+
+    const list = document.getElementById("admin-node-list");
+
+    if (!nodes.length) {
+        list.innerHTML = `<tr><td colspan="6" class="admin-muted">No Node submissions found.</td></tr>`;
+        showMessage("Admin Dashboard ready.", "admin-success");
+        return;
+    }
+
+    list.innerHTML = nodes.map(node => {
+        const submitted = node.created_at ? new Date(node.created_at).toLocaleString() : "-";
+        const status = node.status || "pending";
+        const owner = node.user_id ? escapeHTML(node.user_id) : "-";
+        return `
+            <tr>
+                <td>
+                    <strong>${escapeHTML(node.name || "Unnamed Node")}</strong>
+                    <div class="admin-muted">User: ${owner}</div>
+                    ${node.description ? `<div class="admin-muted">${escapeHTML(node.description)}</div>` : ""}
+                </td>
+                <td>${escapeHTML(node.city || "")}, ${escapeHTML(node.country || "")}</td>
+                <td>${escapeHTML(node.upland_location || "-")}</td>
+                <td><span class="status-badge status-${escapeHTML(status)}">${escapeHTML(status)}</span></td>
+                <td>${escapeHTML(submitted)}</td>
+                <td>
+                    <div class="admin-actions">
+                        ${status !== "approved" ? `<button type="button" class="button button-primary" data-node-action="approved" data-node-id="${escapeHTML(node.id)}">Approve</button>` : ""}
+                        ${status !== "rejected" ? `<button type="button" class="button button-secondary" data-node-action="rejected" data-node-id="${escapeHTML(node.id)}">Reject</button>` : ""}
+                        ${status !== "pending" ? `<button type="button" class="button button-secondary" data-node-action="pending" data-node-id="${escapeHTML(node.id)}">Set Pending</button>` : ""}
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join("");
+
+    showMessage("Admin Dashboard ready.", "admin-success");
+}
+
+async function updateNodeStatus(id, status) {
+    if (!id || !["pending", "approved", "rejected"].includes(status)) return;
+
+    const { error } = await db
+        .from("nodes")
+        .update({ status })
+        .eq("id", id);
+
+    if (error) {
+        console.error(error);
+        showMessage("Could not update the Node. The Admin UPDATE policy may not be configured yet.", "admin-error");
+        return;
+    }
+
+    showMessage(`Node status changed to ${status}.`, "admin-success");
+    await loadNodes();
+}
+
+document.addEventListener("click", event => {
+    const button = event.target.closest("[data-node-action]");
+    if (!button) return;
+    updateNodeStatus(button.dataset.nodeId, button.dataset.nodeAction);
+});
+
+document.getElementById("refresh-nodes").addEventListener("click", loadNodes);
+
+document.getElementById("sign-out").addEventListener("click", async () => {
+    await db.auth.signOut();
+    window.location.href = "./#home";
+});
+
+initialize();
+</script>
+</body>
+</html>

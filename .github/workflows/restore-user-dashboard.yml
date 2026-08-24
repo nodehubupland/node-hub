@@ -1,0 +1,36 @@
+name: Restore user dashboard loader
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  patch-index:
+    runs-on: ubuntu-latest
+    if: github.actor != 'github-actions[bot]'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Add user dashboard script loader
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+          marker = '<script src="app.js?v=20260824-v4"></script>'
+          loader = marker + '<script src="user-dashboard.js?v=20260824-v1"></script>'
+          if 'user-dashboard.js?v=20260824-v1' not in s:
+              if marker not in s:
+                  raise SystemExit('app.js script marker not found')
+              s = s.replace(marker, loader, 1)
+              p.write_text(s, encoding='utf-8')
+          PY
+      - name: Commit loader change
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git diff --cached --quiet || git commit -m 'Restore V1 user dashboard loader'
+          git push

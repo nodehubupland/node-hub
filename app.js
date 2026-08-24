@@ -1390,35 +1390,6 @@ function createDashboard() {
             <div class="auth-card">
 
                 <span class="eyebrow">
-                    ACCOUNT
-                </span>
-
-                <h3>
-                    Welcome
-                </h3>
-
-                <p id="dashboard-welcome">
-                    Welcome to Node Hub.
-                </p>
-
-                <p id="dashboard-email">
-                    Loading...
-                </p>
-
-                <button
-                    type="button"
-                    class="button button-secondary"
-                    data-action="logout"
-                >
-                    Sign Out
-                </button>
-
-            </div>
-
-
-            <div class="auth-card">
-
-                <span class="eyebrow">
                     YOUR NODES
                 </span>
 

@@ -1,5 +1,6 @@
 require('dotenv').config();
 
+const express = require('express');
 const {
   Client,
   GatewayIntentBits,
@@ -37,42 +38,11 @@ const ROLE_DEFINITIONS = [
 ];
 
 const PUBLIC_STRUCTURE = [
-  {
-    name: '📌 START HERE',
-    channels: [
-      ['welcome', 'text'],
-      ['rules', 'text'],
-      ['announcements', 'text'],
-    ],
-  },
-  {
-    name: '🌐 COMMUNITY',
-    channels: [
-      ['general', 'text'],
-      ['upland', 'text'],
-      ['suggestions', 'text'],
-    ],
-  },
-  {
-    name: '🤖 NODE HUB',
-    channels: [
-      ['getting-started', 'text'],
-      ['support', 'text'],
-    ],
-  },
-  {
-    name: '🌎 UPLAND',
-    channels: [
-      ['upland-alerts', 'text'],
-      ['upland-data', 'text'],
-    ],
-  },
-  {
-    name: '💰 SUPPORT NODE HUB',
-    channels: [
-      ['donate', 'text'],
-    ],
-  },
+  { name: '📌 START HERE', channels: [['welcome', 'text'], ['rules', 'text'], ['announcements', 'text']] },
+  { name: '🌐 COMMUNITY', channels: [['general', 'text'], ['upland', 'text'], ['suggestions', 'text']] },
+  { name: '🤖 NODE HUB', channels: [['getting-started', 'text'], ['support', 'text']] },
+  { name: '🌎 UPLAND', channels: [['upland-alerts', 'text'], ['upland-data', 'text']] },
+  { name: '💰 SUPPORT NODE HUB', channels: [['donate', 'text']] },
 ];
 
 const TEAM_STRUCTURE = [
@@ -93,30 +63,17 @@ function slug(name) {
 async function getOrCreateRole(guild, definition) {
   let role = guild.roles.cache.find(r => r.name === definition.name);
   if (!role) {
-    role = await guild.roles.create({
-      name: definition.name,
-      color: definition.color,
-      reason: 'Node Hub initial Discord setup',
-    });
+    role = await guild.roles.create({ name: definition.name, color: definition.color, reason: 'Node Hub initial Discord setup' });
   }
   return role;
 }
 
 async function getOrCreateCategory(guild, name, privateCategory = false, teamRoleIds = []) {
   let category = guild.channels.cache.find(c => c.type === ChannelType.GuildCategory && c.name === name);
-  if (!category) {
-    category = await guild.channels.create({ name, type: ChannelType.GuildCategory });
-  }
-
+  if (!category) category = await guild.channels.create({ name, type: ChannelType.GuildCategory });
   if (privateCategory) {
-    await category.permissionOverwrites.edit(guild.roles.everyone, {
-      ViewChannel: false,
-    });
-    for (const roleId of teamRoleIds) {
-      await category.permissionOverwrites.edit(roleId, {
-        ViewChannel: true,
-      });
-    }
+    await category.permissionOverwrites.edit(guild.roles.everyone, { ViewChannel: false });
+    for (const roleId of teamRoleIds) await category.permissionOverwrites.edit(roleId, { ViewChannel: true });
   }
   return category;
 }
@@ -124,72 +81,38 @@ async function getOrCreateCategory(guild, name, privateCategory = false, teamRol
 async function getOrCreateTextChannel(guild, name, parent, privateChannel = false, teamRoleIds = []) {
   const channelName = slug(name);
   let channel = guild.channels.cache.find(c => c.type === ChannelType.GuildText && c.name === channelName);
-
   if (!channel) {
-    channel = await guild.channels.create({
-      name: channelName,
-      type: ChannelType.GuildText,
-      parent: parent.id,
-      reason: 'Node Hub initial Discord setup',
-    });
+    channel = await guild.channels.create({ name: channelName, type: ChannelType.GuildText, parent: parent.id, reason: 'Node Hub initial Discord setup' });
   } else if (channel.parentId !== parent.id) {
     await channel.setParent(parent.id, { lockPermissions: false });
   }
-
   if (privateChannel) {
     await channel.permissionOverwrites.edit(guild.roles.everyone, { ViewChannel: false });
     for (const roleId of teamRoleIds) {
-      await channel.permissionOverwrites.edit(roleId, {
-        ViewChannel: true,
-        SendMessages: true,
-        ReadMessageHistory: true,
-      });
+      await channel.permissionOverwrites.edit(roleId, { ViewChannel: true, SendMessages: true, ReadMessageHistory: true });
     }
   }
-
   return channel;
 }
 
 async function setupServer(guild) {
   const roles = {};
-  for (const definition of ROLE_DEFINITIONS) {
-    roles[definition.name] = await getOrCreateRole(guild, definition);
-  }
-
-  const teamRoleIds = ROLE_DEFINITIONS
-    .filter(r => TEAM_ROLES.has(r.name))
-    .map(r => roles[r.name].id);
-
+  for (const definition of ROLE_DEFINITIONS) roles[definition.name] = await getOrCreateRole(guild, definition);
+  const teamRoleIds = ROLE_DEFINITIONS.filter(r => TEAM_ROLES.has(r.name)).map(r => roles[r.name].id);
   for (const section of PUBLIC_STRUCTURE) {
     const category = await getOrCreateCategory(guild, section.name);
-    for (const [name] of section.channels) {
-      await getOrCreateTextChannel(guild, name, category);
-    }
+    for (const [name] of section.channels) await getOrCreateTextChannel(guild, name, category);
   }
-
   const teamCategory = await getOrCreateCategory(guild, '🟧 TEAM', true, teamRoleIds);
-  for (const [name] of TEAM_STRUCTURE) {
-    await getOrCreateTextChannel(guild, name, teamCategory, true, teamRoleIds);
-  }
-
+  for (const [name] of TEAM_STRUCTURE) await getOrCreateTextChannel(guild, name, teamCategory, true, teamRoleIds);
   const logChannel = guild.channels.cache.find(c => c.type === ChannelType.GuildText && c.name === 'event-log');
-  if (logChannel) {
-    await logChannel.send({
-      content: 'Node Hub event logging is ready. System events will appear here automatically.',
-    });
-  }
-
+  if (logChannel) await logChannel.send({ content: 'Node Hub event logging is ready. System events will appear here automatically.' });
   return { roles, teamCategory };
 }
 
 const commands = [
-  new SlashCommandBuilder()
-    .setName('setup-server')
-    .setDescription('Create the initial Node Hub Discord structure.')
-    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator.toString()),
-  new SlashCommandBuilder()
-    .setName('node-status')
-    .setDescription('Show the current Node Hub bot status.'),
+  new SlashCommandBuilder().setName('setup-server').setDescription('Create the initial Node Hub Discord structure.').setDefaultMemberPermissions(PermissionFlagsBits.Administrator.toString()),
+  new SlashCommandBuilder().setName('node-status').setDescription('Show the current Node Hub bot status.'),
 ].map(command => command.toJSON());
 
 async function registerCommands() {
@@ -210,12 +133,8 @@ client.once('ready', async () => {
 
 client.on('interactionCreate', async interaction => {
   if (!interaction.isChatInputCommand()) return;
-
   if (interaction.commandName === 'setup-server') {
-    if (!interaction.memberPermissions?.has(PermissionFlagsBits.Administrator)) {
-      return interaction.reply({ content: 'Administrator permission is required.', ephemeral: true });
-    }
-
+    if (!interaction.memberPermissions?.has(PermissionFlagsBits.Administrator)) return interaction.reply({ content: 'Administrator permission is required.', ephemeral: true });
     await interaction.deferReply({ ephemeral: true });
     try {
       await setupServer(interaction.guild);
@@ -225,13 +144,33 @@ client.on('interactionCreate', async interaction => {
       await interaction.editReply(`Setup failed: ${error.message}`);
     }
   }
-
   if (interaction.commandName === 'node-status') {
-    await interaction.reply({
-      content: `**Node Hub Status**\nDiscord: Online\nBot: ${client.user.tag}\nLatency: ${client.ws.ping}ms`,
-      ephemeral: false,
-    });
+    await interaction.reply({ content: `**Node Hub Status**\nDiscord: Online\nBot: ${client.user.tag}\nLatency: ${client.ws.ping}ms`, ephemeral: false });
   }
+});
+
+// Upland Developer API webhook endpoint.
+// GitHub Pages cannot receive POST requests, so the webhook is served by the Render service running this process.
+const server = express();
+server.use(express.json({ limit: '1mb' }));
+
+server.get('/', (_req, res) => res.status(200).json({ service: 'Node Hub webhook', status: 'online' }));
+server.get('/health', (_req, res) => res.status(200).json({ status: 'ok' }));
+
+server.post('/webhook', (req, res) => {
+  const payload = req.body || {};
+  console.log('Upland webhook received:', JSON.stringify(payload));
+
+  // Upland sends a validation POST before enabling the webhook.
+  // A successful HTTP 200 response confirms that the endpoint accepts POST requests.
+  return res.status(200).json({ status: 'ok' });
+});
+
+server.use((_req, res) => res.status(404).json({ status: 404, message: 'Not Found' }));
+
+const PORT = Number(process.env.PORT || 10000);
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`Node Hub webhook server listening on port ${PORT}`);
 });
 
 client.login(TOKEN);

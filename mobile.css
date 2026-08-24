@@ -1,0 +1,319 @@
+/* =========================================
+   NODE HUB
+   MOBILE OVERRIDES
+   2026-08-24
+========================================= */
+
+@media (max-width: 760px) {
+    html {
+        overflow-x: hidden;
+    }
+
+    body {
+        overflow-x: hidden;
+        -webkit-text-size-adjust: 100%;
+    }
+
+    .container {
+        width: 100%;
+        padding-left: 16px;
+        padding-right: 16px;
+    }
+
+    .site-header {
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+        background: rgba(8, 8, 8, 0.96);
+    }
+
+    .header-inner {
+        min-height: 64px;
+        padding: 10px 0;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .logo {
+        font-size: 13px;
+        letter-spacing: 0.06em;
+    }
+
+    .logo-dot {
+        font-size: 16px;
+    }
+
+    .language-selector-wrapper {
+        margin-left: auto;
+    }
+
+    #language-selector {
+        min-width: 112px;
+        height: 36px;
+        padding-left: 11px;
+        padding-right: 24px;
+        font-size: 11px;
+    }
+
+    .main-nav {
+        order: 3;
+        width: 100%;
+        margin: 0;
+        padding: 2px 0 4px;
+        gap: 20px;
+        overflow-x: auto;
+        overscroll-behavior-x: contain;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+
+    .main-nav::-webkit-scrollbar {
+        display: none;
+    }
+
+    .main-nav > a {
+        flex: 0 0 auto;
+        min-height: 38px;
+        display: inline-flex;
+        align-items: center;
+        padding: 4px 1px;
+        font-size: 13px;
+    }
+
+    .section {
+        padding: 64px 0;
+    }
+
+    .section-heading {
+        margin-bottom: 30px;
+    }
+
+    .section-heading h2 {
+        font-size: clamp(32px, 9vw, 44px);
+    }
+
+    .section-heading p {
+        font-size: 14px;
+        line-height: 1.6;
+    }
+
+    .hero-content {
+        padding-top: 58px;
+        padding-bottom: 64px;
+    }
+
+    .hero-content h1 {
+        max-width: 100%;
+        font-size: clamp(42px, 12vw, 60px);
+        line-height: 0.98;
+    }
+
+    .hero-description {
+        font-size: 15px;
+        line-height: 1.6;
+        margin-bottom: 28px;
+    }
+
+    .hero-actions {
+        width: 100%;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .hero-actions .button,
+    .submit-card .button,
+    .auth-card .button {
+        width: 100%;
+        min-height: 50px;
+    }
+
+    .directory-toolbar {
+        gap: 12px;
+        margin-bottom: 22px;
+    }
+
+    .node-counter strong {
+        font-size: 13px;
+    }
+
+    .directory-filters {
+        width: 100%;
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .directory-filters input,
+    .directory-filters select {
+        height: 50px;
+        font-size: 16px;
+    }
+
+    .node-grid,
+    .roadmap-grid,
+    .about-grid,
+    .auth-container {
+        grid-template-columns: 1fr;
+        gap: 14px;
+    }
+
+    .node-card {
+        padding: 20px;
+        border-radius: 16px;
+    }
+
+    .node-card-header {
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+
+    .node-card-logo {
+        width: 50px;
+        height: 50px;
+        border-radius: 12px;
+    }
+
+    .node-card h3 {
+        font-size: 19px;
+    }
+
+    .node-card-description {
+        font-size: 13px;
+        line-height: 1.6;
+    }
+
+    .node-card-links a,
+    .node-card-meta span {
+        min-height: 34px;
+        display: inline-flex;
+        align-items: center;
+    }
+
+    .map-preview {
+        min-height: 340px;
+        border-radius: 20px;
+    }
+
+    .map-preview::before {
+        width: 210px;
+        height: 210px;
+    }
+
+    .map-preview::after {
+        width: 320px;
+        height: 320px;
+    }
+
+    .map-location {
+        font-size: 10px;
+        white-space: nowrap;
+    }
+
+    .map-coming-soon {
+        bottom: 18px;
+        max-width: calc(100% - 32px);
+        text-align: center;
+        white-space: normal;
+    }
+
+    .submit-card {
+        padding: 26px 20px;
+        border-radius: 20px;
+        gap: 20px;
+    }
+
+    .submit-card h3 {
+        font-size: 22px;
+    }
+
+    .submit-card p {
+        font-size: 14px;
+    }
+
+    .about-card,
+    .roadmap-card {
+        padding: 22px 20px;
+    }
+
+    .support-card {
+        padding: 42px 20px;
+        border-radius: 20px;
+    }
+
+    .auth-card {
+        padding: 26px 20px;
+    }
+
+    .auth-card h2 {
+        font-size: 32px;
+    }
+
+    .auth-card input {
+        height: 50px;
+        font-size: 16px;
+    }
+
+    .footer-grid {
+        grid-template-columns: 1fr;
+        gap: 28px;
+        padding-top: 48px;
+        padding-bottom: 42px;
+    }
+}
+
+@media (max-width: 480px) {
+    .container {
+        padding-left: 14px;
+        padding-right: 14px;
+    }
+
+    .header-inner {
+        min-height: 60px;
+    }
+
+    .main-nav {
+        gap: 18px;
+    }
+
+    .hero-content {
+        padding-top: 48px;
+        padding-bottom: 54px;
+    }
+
+    .hero-content h1 {
+        font-size: clamp(38px, 12vw, 54px);
+    }
+
+    .hero-description {
+        font-size: 14px;
+    }
+
+    .node-card {
+        padding: 18px;
+    }
+
+    .node-card-links a {
+        flex: 1 1 auto;
+        justify-content: center;
+    }
+
+    .empty-directory {
+        min-height: 280px;
+        padding: 24px 16px;
+    }
+
+    .map-preview {
+        min-height: 300px;
+    }
+
+    .support-card {
+        padding: 36px 18px;
+    }
+}
+
+@media (hover: none) {
+    .button:hover,
+    .node-card:hover,
+    .about-card:hover {
+        transform: none;
+    }
+}

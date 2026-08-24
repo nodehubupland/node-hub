@@ -211,7 +211,7 @@ function createNodeCard(node) {
                 <a class="node-profile-link" href="#node/${encodeURIComponent(node.id)}" style="color:var(--accent-light);font-weight:800;text-decoration:underline;text-underline-offset:4px;">View Node Profile</a>
             </div>
             <div class="node-card-footer" style="justify-content:center;margin-top:16px;">
-                <span class="verified-badge">Verified Node</span>
+                <span class="verified-badge" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;color:var(--accent-light);font-weight:800;">✓ Verified Node</span>
             </div>
         </div>`;
     return article;

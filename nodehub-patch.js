@@ -1,5 +1,8 @@
 // Node Hub V1 patch loader
 (function () {
+    if (window.__NODEHUB_V1_PATCH__) return;
+    window.__NODEHUB_V1_PATCH__ = true;
+
     const style = document.createElement("style");
     style.textContent = `
         @media (max-width: 760px) {
@@ -21,9 +24,15 @@
     async function loadAccountProfile() {
         if (!currentUser) return;
         const dashboard = document.getElementById("nodehub-dashboard");
-        if (!dashboard || document.getElementById("account-profile-card")) return;
+        if (!dashboard) return;
+
+        const oldCards = dashboard.querySelectorAll(".account-profile-card");
+        oldCards.forEach((card, index) => { if (index > 0) card.remove(); });
+        if (dashboard.querySelector("#account-profile-card")) return;
+
         try {
-            const { data: profile } = await db.from("profiles").select("username, role").eq("id", currentUser.id).maybeSingle();
+            const { data: profile, error } = await db.from("profiles").select("username, role").eq("id", currentUser.id).maybeSingle();
+            if (error) console.warn("Profile lookup:", error.message);
             const username = profile?.username || currentUser.user_metadata?.username || currentUser.email?.split("@")[0] || "User";
             const role = profile?.role || "user";
             const card = document.createElement("div");
@@ -38,7 +47,7 @@
 
     const translations = {
         "pt-BR": {
-            "NODE HUB ACCOUNT":"CONTA NODE HUB", "Dashboard":"Painel", "Manage your Node Hub account and Node submissions.":"Gerencie sua conta Node Hub e seus Nodes enviados.", "Sign out":"Sair", "YOUR NODES":"SEUS NODES", "My Nodes":"Meus Nodes", "NODE REGISTRATION":"CADASTRO DE NODE", "Register My Node":"Cadastrar Meu Node", "Node registration will be submitted for review by the Node Hub team.":"O cadastro será enviado para análise da equipe Node Hub.", "Submit Node for Review":"Enviar Node para Análise", "Cancel":"Cancelar", "ACCOUNT INFORMATION":"INFORMAÇÕES DA CONTA", "Username":"Nome de usuário", "Email":"E-mail", "Function":"Função", "Not signed in":"Não conectado", "Sign in":"Entrar", "Create an Account":"Criar uma Conta", "Explore Nodes":"Explorar Nodes", "Find Nodes Across Upland":"Encontre Nodes pelo Upland", "World Map":"Mapa Mundial", "About":"Sobre", "Support":"Suporte", "Nodes":"Nodes", "Map":"Mapa", "Roadmap":"Roadmap"
+            "NODE HUB ACCOUNT":"CONTA NODE HUB", "Dashboard":"Painel", "Manage your Node Hub account and Node submissions.":"Gerencie sua conta Node Hub e seus Nodes enviados.", "Sign out":"Sair", "YOUR NODES":"SEUS NODES", "My Nodes":"Meus Nodes", "NODE REGISTRATION":"CADASTRO DE NODE", "Register My Node":"Cadastrar Meu Node", "Node registration will be submitted for review by the Node Hub team.":"O cadastro será enviado para análise da equipe Node Hub.", "Submit Node for Review":"Enviar Node para Análise", "Cancel":"Cancelar", "ACCOUNT INFORMATION":"INFORMAÇÕES DA CONTA", "Username":"Nome de usuário", "Email":"E-mail", "Function":"Função", "No Nodes registered yet.":"Nenhum Node cadastrado ainda.", "Use Register My Node to submit your first Node.":"Use Cadastrar Meu Node para enviar seu primeiro Node.", "Node Name":"Nome do Node", "Description":"Descrição", "City":"Cidade", "Country":"País", "Neighborhood":"Bairro", "Enter the Neighborhood where your Node is located in Upland.":"Informe o bairro onde seu Node está localizado no Upland.", "Continent":"Continente", "Select continent":"Selecione o continente", "North America":"América do Norte", "South America":"América do Sul", "Europe":"Europa", "Asia":"Ásia", "Africa":"África", "Oceania":"Oceania", "Node Logo":"Logo do Node", "Discord":"Discord", "Telegram":"Telegram", "X / Twitter":"X / Twitter", "Not signed in":"Não conectado", "Sign in":"Entrar", "Create an Account":"Criar uma Conta", "Explore Nodes":"Explorar Nodes", "Find Nodes Across Upland":"Encontre Nodes pelo Upland", "World Map":"Mapa Mundial", "About":"Sobre", "Support":"Suporte", "Nodes":"Nodes", "Map":"Mapa", "Roadmap":"Roadmap"
         }
     };
 
@@ -60,7 +69,6 @@
         });
     }
 
-    // V1 database compatibility: the current nodes table does not contain upland_node_url.
     document.addEventListener("submit", async function (event) {
         const form = event.target;
         if (!form || form.id !== "node-registration-form") return;
@@ -108,7 +116,7 @@
         if (uplandInput) uplandInput.remove();
         if (uplandHelp?.tagName === "SMALL") uplandHelp.remove();
         const selector = document.getElementById("language-selector");
-        selector?.addEventListener("change", () => setTimeout(applyLanguagePreference, 0));
+        selector?.addEventListener("change", () => setTimeout(applyLanguagePreference, 50));
         setTimeout(() => { applyLanguagePreference(); loadAccountProfile(); }, 300);
         const observer = new MutationObserver(() => { loadAccountProfile(); });
         observer.observe(document.body, { childList:true, subtree:true });

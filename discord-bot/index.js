@@ -219,9 +219,66 @@ if (discordEnabled) {
 
 const server = express();
 server.use(express.json({ limit: '1mb' }));
-server.get('/', (_req, res) => res.status(200).json({ service: 'Node Hub webhook', status: 'online' }));
-server.get('/health', (_req, res) => res.status(200).json({ status: 'ok' }));
-server.post('/webhook', (req, res) => { console.log('Upland webhook received:', JSON.stringify(req.body || {})); return res.status(200).json({ status: 'ok' }); });
+
+const LANDING_PAGE = `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Node Hub — Upland tools, automation, data and community.">
+  <title>Node Hub | Upland Tools & Community</title>
+  <style>
+    :root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #080b12; color: #f5f7fb; }
+    main { width: min(900px, 92vw); padding: 72px 28px; text-align: center; }
+    .brand { display: inline-flex; align-items: center; gap: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; font-size: 14px; color: #f5a623; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; background: #2ecc71; box-shadow: 0 0 18px rgba(46,204,113,.65); }
+    h1 { margin: 24px 0 12px; font-size: clamp(48px, 9vw, 88px); line-height: .95; letter-spacing: -.05em; }
+    .tagline { margin: 0 auto; max-width: 680px; color: #aeb7c7; font-size: clamp(18px, 3vw, 24px); line-height: 1.5; }
+    .status { display: inline-flex; align-items: center; gap: 9px; margin: 28px 0 36px; padding: 10px 15px; border: 1px solid #202838; border-radius: 999px; background: #0d121c; color: #d8deea; font-size: 14px; }
+    .links { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
+    a { display: inline-block; padding: 13px 20px; border-radius: 10px; text-decoration: none; font-weight: 700; border: 1px solid #2a3447; color: #fff; background: #111827; }
+    a.primary { background: #f5a623; border-color: #f5a623; color: #0b0d12; }
+    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 56px; }
+    .card { padding: 22px; text-align: left; border: 1px solid #1d2635; border-radius: 14px; background: #0d121c; }
+    .card strong { display: block; margin-bottom: 7px; }
+    .card span { color: #8f9aab; font-size: 14px; line-height: 1.5; }
+    footer { margin-top: 52px; color: #687386; font-size: 13px; }
+    @media (max-width: 680px) { .grid { grid-template-columns: 1fr; } main { padding: 48px 20px; } }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="brand"><span class="dot"></span> Node Hub</div>
+    <h1>Build. Automate. Connect.</h1>
+    <p class="tagline">Upland tools, automation, data and community in one place.</p>
+    <div class="status"><span class="dot"></span> Node Hub systems online</div>
+    <div class="links">
+      <a class="primary" href="https://discord.com/">Discord Community</a>
+      <a href="https://nodehub.world/health">System Status</a>
+    </div>
+    <section class="grid">
+      <div class="card"><strong>Upland Integration</strong><span>Infrastructure prepared for Upland application and webhook integrations.</span></div>
+      <div class="card"><strong>Developer Tools</strong><span>Tools and services for builders working with the Node Hub ecosystem.</span></div>
+      <div class="card"><strong>Community</strong><span>A focused community for Uplanders, developers and Node Hub contributors.</span></div>
+    </section>
+    <footer>Node Hub is an independent project and is not affiliated with or operated by Upland.</footer>
+  </main>
+</body>
+</html>`;
+
+server.get('/', (_req, res) => res.status(200).type('html').send(LANDING_PAGE));
+server.get('/health', (_req, res) => res.status(200).json({ status: 'ok', service: 'Node Hub' }));
+
+// Browser visits to the Upland webhook URL should land on the public Node Hub site.
+// Upland continues to use POST /webhook for webhook delivery.
+server.get('/webhook', (_req, res) => res.redirect(302, '/'));
+server.post('/webhook', (req, res) => {
+  console.log('Upland webhook received:', JSON.stringify(req.body || {}));
+  return res.status(200).json({ status: 'ok' });
+});
+
 server.use((_req, res) => res.status(404).json({ status: 404, message: 'Not Found' }));
 const PORT = Number(process.env.PORT || 10000);
 server.listen(PORT, '0.0.0.0', () => console.log(`Node Hub webhook server listening on port ${PORT}`));

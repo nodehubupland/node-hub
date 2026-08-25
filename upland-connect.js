@@ -25,7 +25,7 @@
     }
     box.innerHTML = `<span class="eyebrow">UPLAND ACCOUNT</span><h2 style="margin-top:8px">Connect Upland Account</h2><p>Open Upland and enter this connection code to authorize Node Hub:</p><div style="font-size:clamp(28px,6vw,44px);font-weight:800;letter-spacing:.16em;text-align:center;padding:20px;margin:18px 0;border:1px solid rgba(255,255,255,.12);border-radius:14px;background:rgba(255,255,255,.04)">${esc(connection.connection_code || '')}</div><p style="opacity:.75">Waiting for Upland to confirm the connection...</p>`;
   }
-  async function refresh(box) { try { const connection = await readConnection(); render(box, connection); if (connection?.status === 'pending') startPolling(box); } catch (error) { console.error('Upland connection status:', error); box.innerHTML = '<span class="eyebrow">UPLAND ACCOUNT</span><h2 style="margin-top:8px">Connect Upland Account</h2><p>Unable to load the Upland connection status right now.</p>'; } }
+  async function refresh(box) { try { const connection = await readConnection(); render(box, connection); if (connection?.status === 'pending') startPolling(box); } catch (error) { console.error('Upland connection status:', error); render(box, null); const msg = box.querySelector('#upland-connect-message'); if (msg) msg.textContent = 'Unable to load the Upland connection status right now.'; } }
   function startPolling(box) { stopPolling(); pollTimer = setInterval(async () => { try { const connection = await readConnection(); if (connection?.status === 'connected') render(box, connection); } catch (error) { console.warn('Upland connection polling:', error); } }, 3000); }
   async function startConnection() {
     const button = document.getElementById('upland-connect-button'); const message = document.getElementById('upland-connect-message');
@@ -34,12 +34,16 @@
     catch (error) { console.error('Upland connection:', error); if (message) message.textContent = error?.message || 'Unable to generate an Upland connection code.'; if (button) { button.disabled = false; button.textContent = 'Connect Upland Account'; } }
   }
   function mount() {
-    const dashboard = document.getElementById('nodehub-user-dashboard'); if (!dashboard || document.getElementById('upland-account-card')) return;
-    const account = dashboard.querySelector('#user-account-info')?.closest('.auth-card'); if (!account) return;
-    const box = document.createElement('div'); box.id = 'upland-account-card'; box.className = 'auth-card'; box.style.marginBottom = '24px'; account.insertAdjacentElement('afterend', box); refresh(box);
+    const dashboard = document.getElementById('nodehub-user-dashboard'); if (!dashboard) return;
+    let box = document.getElementById('upland-account-card');
+    if (!box) {
+      const account = dashboard.querySelector('#user-account-info')?.closest('.auth-card'); if (!account) return;
+      box = document.createElement('div'); box.id = 'upland-account-card'; box.className = 'auth-card'; box.style.marginBottom = '24px'; account.insertAdjacentElement('afterend', box);
+    }
+    if (!box.dataset.uplandInitialized) { box.dataset.uplandInitialized = '1'; refresh(box); }
   }
   function watch() { mount(); observer = new MutationObserver(mount); observer.observe(document.body, { childList:true, subtree:true }); window.addEventListener('hashchange', mount); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', watch); else watch();
 })();
 
-// Installer trigger marker: 2026-08-25 V1 Upland integration.
+// Installer trigger marker: 2026-08-25 V1 Upland integration fix.

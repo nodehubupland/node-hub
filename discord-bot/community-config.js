@@ -23,23 +23,22 @@ const PROTECTED_ROLES = new Set(['Founder', 'Administrator']);
 const MODERATION_EXEMPT_ROLES = new Set(['Founder', 'Administrator']);
 
 const PUBLIC_STRUCTURE = [
-  { name: '📌 START HERE', channels: ['welcome', 'rules', 'announcements'] },
-  { name: '🌐 COMMUNITY', channels: ['general', 'suggestions', 'community-promo', 'partnerships', 'events'] },
-  { name: '🌎 UPLAND', channels: ['upland', 'treasure-hunt', 'upland-wins', 'upland-discussion'] },
-  { name: '🤖 NODE HUB', channels: ['getting-started', 'support', 'leaderboard', 'player-stats'] },
-  { name: '📊 UPLAND DATA', channels: ['bsts-assets', 'bsts-properties', 'new-listings', 'listing-alerts', 'treasure-results', 'upland-alerts'] },
+  { name: '📌 START HERE', channels: ['welcome', 'rules', 'announcements', 'donate'] },
+  { name: '🌐 COMMUNITY', channels: ['general', 'treasure-hunt', 'events', 'community-promo'] },
+  { name: '🌎 UPLAND', channels: ['upland-guide', 'treasure-results', 'daily-ranking', 'player-stats', 'bsts-properties', 'bsts-assets', 'sold', 'listing-alerts', 'upland-alerts'] },
+  { name: '🤖 NODE HUB', channels: ['getting-started', 'leaderboard'] },
   { name: '🔊 VOICE', voiceChannels: ['Upland', 'Launches', 'Node Hub', 'General'] },
-  { name: '💰 SUPPORT NODE HUB', channels: ['donate'] },
+  { name: '🆘 SUPPORT', channels: ['open-ticket'] },
 ];
 
 const BOT_ONLY_CHANNELS = new Set([
-  'rules', 'announcements', 'getting-started', 'leaderboard', 'player-stats',
-  'new-listings', 'listing-alerts', 'treasure-results', 'upland-alerts', 'node-status', 'event-log',
+  'rules', 'announcements', 'donate', 'upland-guide', 'treasure-results', 'daily-ranking', 'player-stats',
+  'listing-alerts', 'upland-alerts', 'getting-started', 'leaderboard', 'open-ticket', 'node-status', 'event-log',
 ]);
 
-const MANUAL_LISTING_CHANNELS = new Set(['bsts-assets', 'bsts-properties']);
+const MANUAL_LISTING_CHANNELS = new Set(['bsts-assets', 'bsts-properties', 'sold']);
 
-const TEAM_STRUCTURE = ['team-chat', 'tasks', 'development', 'internal-bugs', 'node-status', 'event-log'];
+const TEAM_STRUCTURE = ['support-tickets', 'team-chat', 'tasks', 'development', 'internal-bugs', 'node-status', 'event-log'];
 const TEAM_ROLES = new Set(['Founder', 'Administrator', 'Bot', 'Moderator', 'Developer']);
 
 const NOTIFICATION_ROLES = {

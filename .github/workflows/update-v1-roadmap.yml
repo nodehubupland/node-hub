@@ -1,0 +1,38 @@
+name: Update Node Hub V1 roadmap
+
+on:
+  push:
+    paths:
+      - .github/workflows/update-v1-roadmap.yml
+
+permissions:
+  contents: write
+
+jobs:
+  update-roadmap:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Move Upland API integration to V1
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path("index.html")
+          text = path.read_text(encoding="utf-8")
+          v1_marker = '<li>Donate / Buy Me a Coffee</li>'
+          if '<li>Upland API integration</li>' not in text:
+              text = text.replace(v1_marker, v1_marker + '<li>Upland API integration</li><li>Connect Upland Account</li><li>Upland authentication via API</li>', 1)
+          text = text.replace('<li>Upland API integrations</li>', '', 1)
+          path.write_text(text, encoding="utf-8")
+          PY
+      - name: Commit roadmap update
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          if git diff --cached --quiet; then
+            echo "No roadmap changes needed."
+          else
+            git commit -m "Move Upland API integration to V1 roadmap"
+            git push
+          fi

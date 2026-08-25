@@ -42,3 +42,5 @@ jobs:
             git commit -m "Load Upland account connection"
             git push
           fi
+
+# Triggered after initial workflow creation to install the V1 connection script.

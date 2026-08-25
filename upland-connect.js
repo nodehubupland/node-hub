@@ -42,8 +42,9 @@
     }
     if (!box.dataset.uplandInitialized) { box.dataset.uplandInitialized = '1'; refresh(box); }
   }
-  function watch() { mount(); observer = new MutationObserver(mount); observer.observe(document.body, { childList:true, subtree:true }); window.addEventListener('hashchange', mount); }
+  window.__nodehubUplandMount = mount;
+  function watch() { mount(); if (observer) observer.disconnect(); observer = new MutationObserver(mount); observer.observe(document.body, { childList:true, subtree:true }); window.addEventListener('hashchange', mount); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', watch); else watch();
 })();
 
-// Installer trigger marker: 2026-08-25 V1 Upland integration fix.
+// Installer trigger marker: 2026-08-25 V1 Upland integration fix v3.

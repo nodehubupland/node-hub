@@ -1,17 +1,14 @@
 require('dotenv').config();
 
-const { execFileSync } = require('child_process');
+const { execFile } = require('child_process');
 const path = require('path');
 
 if (process.env.DISCORD_TOKEN && process.env.DISCORD_CLIENT_ID && process.env.DISCORD_GUILD_ID && process.env.NODE_HUB_SKIP_STRUCTURE_SYNC !== 'true') {
-  try {
-    console.log('NODE_HUB_STRUCTURE_SYNC_START: synchronizing Discord structure before bot startup...');
-    execFileSync(process.execPath, [path.join(__dirname, 'sync-discord-structure.js')], { stdio: 'inherit', env: process.env });
-    console.log('NODE_HUB_STRUCTURE_SYNC_COMPLETE: Discord structure synchronization finished.');
-  } catch (error) {
-    console.error('NODE_HUB_STRUCTURE_SYNC_FAILED:', error.message);
-    process.exit(1);
-  }
+  console.log('NODE_HUB_STRUCTURE_SYNC_START: synchronizing Discord structure in background...');
+  execFile(process.execPath, [path.join(__dirname, 'sync-discord-structure.js')], { stdio: 'inherit', env: process.env }, (error) => {
+    if (error) console.error('NODE_HUB_STRUCTURE_SYNC_FAILED:', error.message);
+    else console.log('NODE_HUB_STRUCTURE_SYNC_COMPLETE: Discord structure synchronization finished.');
+  });
 }
 
 const express = require('express');

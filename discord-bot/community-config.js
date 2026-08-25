@@ -5,6 +5,7 @@ const ROLE_DEFINITIONS = [
   { name: 'Moderator', color: 0x2ECC71 },
   { name: 'Developer', color: 0x3498DB },
   { name: 'Partner', color: 0x1ABC9C },
+  { name: 'Creator', color: 0x9B59B6 },
   { name: 'Legend', color: 0xF1C40F },
   { name: 'Elite', color: 0xE67E22 },
   { name: 'Contrib', color: 0x9B59B6 },

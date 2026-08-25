@@ -40,7 +40,7 @@ const PUBLIC_STRUCTURE = [
   { name: '📌 START HERE', channels: ['welcome', 'rules', 'announcements'] },
   { name: '🌐 COMMUNITY', channels: ['general', 'upland', 'suggestions'] },
   { name: '🤖 NODE HUB', channels: ['getting-started', 'support'] },
-  { name: '🌎 UPLAND', channels: ['upland-alerts', 'upland-data'] },
+  { name: '🌎 UPLAND DATA', channels: ['bsts-assets', 'bsts-properties', 'new-listings', 'listing-alerts', 'treasure-results', 'upland-alerts'] },
   { name: '💰 SUPPORT NODE HUB', channels: ['donate'] },
 ];
 const TEAM_STRUCTURE = ['team-chat', 'tasks', 'development', 'internal-bugs', 'node-status', 'event-log'];

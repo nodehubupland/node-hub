@@ -1,11 +1,11 @@
 require('dotenv').config();
-const { Client, GatewayIntentBits, ChannelType, PermissionFlagsBits } = require('discord.js');
+const { Client, GatewayIntentBits, ChannelType } = require('discord.js');
 
 const TOKEN = process.env.DISCORD_TOKEN;
 const GUILD_ID = process.env.DISCORD_GUILD_ID;
 
 if (!TOKEN || !GUILD_ID) {
-  console.log('Discord structure sync skipped: DISCORD_TOKEN or DISCORD_GUILD_ID is missing.');
+  console.log('NODE_HUB_STRUCTURE_SYNC_SKIPPED: DISCORD_TOKEN or DISCORD_GUILD_ID is missing.');
   process.exit(0);
 }
 
@@ -48,11 +48,20 @@ const STRUCTURE = [
   { category: '🆘 SUPPORT', channels: [
     { name: 'open-ticket', mode: 'readonly' },
   ]},
+  { category: '🟧 TEAM', channels: [
+    { name: 'support-tickets', mode: 'team' },
+    { name: 'team-chat', mode: 'team' },
+    { name: 'tasks', mode: 'team' },
+    { name: 'development', mode: 'team' },
+    { name: 'internal-bugs', mode: 'team' },
+    { name: 'node-status', mode: 'team' },
+    { name: 'event-log', mode: 'team' },
+  ]},
 ];
 
 const OLD_CATEGORIES = new Set(['📊 UPLAND DATA', '💰 SUPPORT NODE HUB']);
 const OLD_CHANNELS = new Set([
-  'suggestions', 'partnerships', 'support', 'upland', 'upland-wins', 'upland-discussion', 'new-listings'
+  'suggestions', 'partnerships', 'support', 'upland', 'upland-wins', 'upland-discussion', 'new-listings',
 ]);
 
 function slug(name) {
@@ -102,6 +111,7 @@ async function applyPermissions(channel, mode, guild) {
     });
     return;
   }
+  if (mode === 'team') return;
   await channel.permissionOverwrites.edit(guild.roles.everyone, {
     ViewChannel: true,
     SendMessages: false,
@@ -113,7 +123,6 @@ async function applyPermissions(channel, mode, guild) {
 
 async function sync(guild) {
   const desiredChannelNames = new Set(STRUCTURE.flatMap(section => section.channels.map(c => slug(c.name))));
-  const desiredCategories = new Set(STRUCTURE.map(section => section.category));
 
   for (const channel of [...guild.channels.cache.values()]) {
     if (channel.type === ChannelType.GuildCategory && OLD_CATEGORIES.has(channel.name)) {
@@ -141,7 +150,7 @@ async function sync(guild) {
   const announcements = guild.channels.cache.find(c => c.name === 'announcements' && c.type === ChannelType.GuildAnnouncement);
   if (announcements && typeof guild.setPublicUpdatesChannel === 'function') await guild.setPublicUpdatesChannel(announcements, 'Node Hub community announcements').catch(() => {});
 
-  console.log(`Discord structure synchronized: ${guild.name}`);
+  console.log(`NODE_HUB_STRUCTURE_SYNC_OK: final Discord structure synchronized for ${guild.name}`);
 }
 
 client.once('ready', async () => {
@@ -149,7 +158,7 @@ client.once('ready', async () => {
     const guild = await client.guilds.fetch(GUILD_ID);
     await sync(guild);
   } catch (error) {
-    console.error('Discord structure sync failed:', error);
+    console.error('NODE_HUB_STRUCTURE_SYNC_FAILED:', error);
     process.exitCode = 1;
   } finally {
     await client.destroy();
@@ -157,6 +166,6 @@ client.once('ready', async () => {
 });
 
 client.login(TOKEN).catch(error => {
-  console.error('Discord structure sync login failed:', error);
+  console.error('NODE_HUB_STRUCTURE_SYNC_LOGIN_FAILED:', error);
   process.exitCode = 1;
 });

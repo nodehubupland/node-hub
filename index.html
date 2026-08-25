@@ -25,4 +25,5 @@ const dict={"UPLAND COMMUNITY DIRECTORY":"DIRETÓRIO DA COMUNIDADE UPLAND","Disc
 const key="nodehub-language",version="6";if(localStorage.getItem("nodehub-language-version")!==version){localStorage.removeItem(key);localStorage.setItem("nodehub-language-version",version);}function translate(){document.querySelectorAll("[data-i18n]").forEach(el=>{const k=el.getAttribute("data-i18n");if(dict[k])el.textContent=dict[k];});document.querySelectorAll("input[placeholder]").forEach(el=>{if(dict[el.placeholder])el.placeholder=dict[el.placeholder];});document.documentElement.lang="pt-BR";localStorage.setItem(key,"pt-BR");}const s=document.getElementById("language-selector");const saved=localStorage.getItem(key)||"en-US";s.value=saved;s.addEventListener("change",()=>{if(s.value==="pt-BR")translate();else{localStorage.setItem(key,"en-US");location.reload();}});if(saved==="pt-BR")window.addEventListener("DOMContentLoaded",translate,{once:true});
 })();
 </script>
+    <script src="upland-connect.js?v=20260825-v1"></script>
 </body></html>

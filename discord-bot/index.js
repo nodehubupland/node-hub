@@ -32,5 +32,5 @@ const client = discordEnabled ? new Client({
   ],
 }) : null;
 
-// The Discord structure is synchronized by a separate Render process/deploy step.
-// Keep the main bot process independent so a synchronization failure cannot stop Express or Discord.
+// Main bot startup intentionally remains independent from the Discord structure sync.
+// The Render service must stay alive even if the optional sync process fails.

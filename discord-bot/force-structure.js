@@ -1,7 +1,6 @@
 const { Client, ChannelType } = require('discord.js');
 
-// Safety mode: structure synchronization is intentionally disabled while we inspect
-// the existing New Box Games server. Nothing is created, moved, edited or deleted.
+// Safety mode: audit the existing server without changing its structure.
 async function auditGuild(guild) {
   await guild.channels.fetch();
   await guild.roles.fetch();
@@ -11,9 +10,18 @@ async function auditGuild(guild) {
     .sort((a, b) => a.position - b.position);
 
   const categoryIds = new Set(categories.map(c => c.id));
-  const uncategorized = [...guild.channels.cache.values()]
-    .filter(c => !c.parentId && !categoryIds.has(c.id))
+  const channels = [...guild.channels.cache.values()]
+    .filter(c => c.type !== ChannelType.GuildCategory)
     .sort((a, b) => a.position - b.position);
+
+  const typeName = type => ({
+    [ChannelType.GuildText]: 'text',
+    [ChannelType.GuildAnnouncement]: 'announcement',
+    [ChannelType.GuildVoice]: 'voice',
+    [ChannelType.GuildStageVoice]: 'stage',
+    [ChannelType.GuildForum]: 'forum',
+    [ChannelType.GuildMedia]: 'media',
+  }[type] || String(type));
 
   const result = {
     guild: guild.name,
@@ -22,34 +30,26 @@ async function auditGuild(guild) {
     roles: [...guild.roles.cache.values()]
       .filter(r => r.name !== '@everyone')
       .sort((a, b) => b.position - a.position)
-      .map(r => ({ name: r.name, position: r.position, managed: r.managed })),
+      .map(r => r.name),
     categories: categories.map(category => ({
       name: category.name,
-      id: category.id,
       position: category.position,
-      channels: [...guild.channels.cache.values()]
+      channels: channels
         .filter(c => c.parentId === category.id)
-        .sort((a, b) => a.position - b.position)
         .map(c => ({
           name: c.name,
-          id: c.id,
-          type: c.type,
+          type: typeName(c.type),
           position: c.position,
           topic: c.topic || null,
-          nsfw: Boolean(c.nsfw),
         })),
     })),
-    uncategorized: uncategorized.map(c => ({
-      name: c.name,
-      id: c.id,
-      type: c.type,
-      position: c.position,
-    })),
+    uncategorized: channels
+      .filter(c => !c.parentId || !categoryIds.has(c.parentId))
+      .map(c => ({ name: c.name, type: typeName(c.type), position: c.position })),
   };
 
-  console.log('NODE_HUB_SERVER_AUDIT_BEGIN');
-  console.log(JSON.stringify(result, null, 2));
-  console.log('NODE_HUB_SERVER_AUDIT_END');
+  // Keep the report on one log line so Render does not paginate the JSON itself.
+  console.log('NODE_HUB_SERVER_AUDIT_JSON=' + JSON.stringify(result));
 }
 
 const originalLogin = Client.prototype.login;

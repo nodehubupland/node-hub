@@ -1,8 +1,7 @@
-// New Box Games uses the approved Discord template finalizer and a safe legacy archive.
-require('./server-structure-finalizer');
-const { archiveLegacyChannels } = require('./archive-legacy-channels');
-
+// Discord structure is frozen for New Box Games.
+// This module must never create, move, rename, delete or permission-edit channels/roles.
 const { Client, ChannelType } = require('discord.js');
+const { setupUplandData } = require('./upland-data');
 
 async function auditGuild(guild) {
   await guild.channels.fetch();
@@ -25,23 +24,38 @@ async function auditGuild(guild) {
     guild: guild.name,
     guildId: guild.id,
     memberCount: guild.memberCount,
-    roles: [...guild.roles.cache.values()].filter(r => r.name !== '@everyone').sort((a,b)=>b.position-a.position).map(r=>r.name),
-    categories: categories.map(c => ({ name:c.name, position:c.position, channels:channels.filter(x=>x.parentId===c.id).map(x=>({name:x.name,type:typeName(x.type),position:x.position})) })),
-    uncategorized: channels.filter(c=>!c.parentId).map(c=>({name:c.name,type:typeName(c.type),position:c.position}))
+    roles: [...guild.roles.cache.values()]
+      .filter(r => r.name !== '@everyone')
+      .sort((a, b) => b.position - a.position)
+      .map(r => r.name),
+    categories: categories.map(c => ({
+      name: c.name,
+      position: c.position,
+      channels: channels
+        .filter(x => x.parentId === c.id)
+        .map(x => ({ name: x.name, type: typeName(x.type), position: x.position }))
+    })),
+    uncategorized: channels
+      .filter(c => !c.parentId)
+      .map(c => ({ name: c.name, type: typeName(c.type), position: c.position }))
   }));
 }
 
 const originalLogin = Client.prototype.login;
-Client.prototype.login = function safeLogin(token) {
-  if (!this.__nodeHubSafetyMode) {
-    this.__nodeHubSafetyMode = true;
-    try { require('./xp-system').setup(this); } catch (error) { console.error('NODE_HUB_XP_INIT_ERROR:', error); }
+Client.prototype.login = function frozenStructureLogin(token) {
+  if (!this.__nodeHubFrozenStructure) {
+    this.__nodeHubFrozenStructure = true;
+    try {
+      require('./xp-system').setup(this);
+    } catch (error) {
+      console.error('NODE_HUB_XP_INIT_ERROR:', error);
+    }
+    setupUplandData(this);
     this.once('ready', async () => {
-      console.log('NODE_HUB_SERVER_AUDIT: approved New Box template synchronization enabled.');
+      console.log('NODE_HUB_STRUCTURE_FROZEN: no channel/category/role synchronization will run.');
       for (const guild of this.guilds.cache.values()) {
         try {
           await auditGuild(guild);
-          await archiveLegacyChannels(guild);
         } catch (error) {
           console.error(`NODE_HUB_SERVER_AUDIT_ERROR:${guild.id}:`, error);
         }

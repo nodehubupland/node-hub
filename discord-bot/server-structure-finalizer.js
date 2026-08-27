@@ -1,116 +1,32 @@
-const { Client, ChannelType, PermissionFlagsBits } = require('discord.js');
+const { Client, ChannelType } = require('discord.js');
 
-const FINAL_STRUCTURE = [
-  { category: '📌 START HERE', text: ['welcome', 'rules', 'announcements', 'donate'] },
-  { category: '🌐 COMMUNITY', text: ['general', 'treasure-hunt', 'events', 'community-promo'] },
-  { category: '🌎 UPLAND', text: ['upland-guide', 'treasure-results', 'daily-ranking', 'player-stats', 'bsts-properties', 'bsts-assets', 'sold', 'listing-alerts', 'upland-alerts'] },
-  { category: '🤖 NODE HUB', text: ['getting-started', 'leaderboard'] },
-  { category: '🔊 VOICE', voice: ['Upland', 'Launches', 'Node Hub', 'General'] },
-  { category: '🆘 SUPPORT', text: ['open-ticket'] },
+const STRUCTURE = [
+  ['📌 START HERE', [['welcome', '👋-welcome', 'readonly'], ['rules', '📕-rules', 'readonly'], ['announcements', '📣-announcements', 'announcement'], ['information', 'ℹ️-information', 'readonly'], ['donate', '💰-donate', 'readonly']]],
+  ['📻 RADIO BOX', [['radio-cafe-chat', '☕-radio-cafe-chat', 'open'], ['upland-01', '🔊-Upland-01', 'voice'], ['upland-02', '🔊-Upland-02', 'voice'], ['baguncinha-01', '🎮-Baguncinha-de-Jogos-01', 'voice'], ['baguncinha-02', '🎮-Baguncinha-de-Jogos-02', 'voice'], ['radio-general', '🔊-General', 'voice']]],
+  ['🌎 COMMUNITY', [['general', '💬-general', 'open', ['geral']], ['spawn-de-memes', '😂-spawn-de-memes', 'open'], ['giveaways', '🎉-giveaways', 'open', ['sorteio']], ['level-up', '🏆-level-up', 'readonly'], ['community-promo', '📢-community-promo', 'open'], ['events', '🎉-events', 'readonly'], ['invite', '🔗-invite', 'open']]],
+  ['🦙 UPLAND', [['upland-chat', '💬-upland-chat', 'open'], ['upland-announcements', '📣-upland-announcements', 'readonly'], ['upland-guide', '📖-upland-guide', 'readonly'], ['nodes-newbox', '🖥️-nodes-newbox', 'open', ['node-new-box', 'nodes-new-box']], ['treasure-hunt', '🏆-treasure-hunt', 'open', ['caça-ao-tesouro']]]],
+  ['📊 UPLAND DATA', [['data-guide', '📚-data-guide', 'readonly'], ['treasure-results', '📊-treasure-results', 'readonly'], ['daily-ranking', '🏆-daily-ranking', 'readonly'], ['player-stats', '👤-player-stats', 'readonly'], ['listing-alerts', '🚨-listing-alerts', 'readonly']]],
+  ['🤖 NODE HUB', [['getting-started', '📖-getting-started', 'readonly'], ['leaderboard', '🏆-leaderboard', 'readonly'], ['node-hub-status', '📡-node-status', 'readonly']]],
+  ['🎮 GAMES', [['games-chat', '💬-games-chat', 'open'], ['gta', '🚗-gta', 'open', ['gta-geral']], ['videos-lives', '📺-videos-lives', 'open'], ['gaming-news', '📰-gaming-news', 'readonly']]],
+  ['🆘 SUPPORT', [['support', '💬-support', 'open'], ['open-ticket', '🎫-open-ticket', 'open']]],
 ];
-
-const BOT_ONLY = new Set([
-  'rules', 'announcements', 'donate', 'upland-guide', 'treasure-results', 'daily-ranking', 'player-stats',
-  'listing-alerts', 'upland-alerts', 'getting-started', 'leaderboard', 'open-ticket',
-]);
-
-const OPEN = new Set(['general', 'treasure-hunt', 'community-promo', 'bsts-properties', 'bsts-assets', 'sold']);
-const EVENTS = 'events';
-
-function slug(name) {
-  return name.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
-}
-
-async function category(guild, name) {
-  let c = guild.channels.cache.find(x => x.type === ChannelType.GuildCategory && x.name === name);
-  if (!c) c = await guild.channels.create({ name, type: ChannelType.GuildCategory, reason: 'Node Hub final Discord structure' });
-  return c;
-}
-
-async function textChannel(guild, name, parent) {
-  const channelName = slug(name);
-  let c = guild.channels.cache.find(x => x.type === ChannelType.GuildText && x.name === channelName);
-  if (!c) c = guild.channels.cache.find(x => x.isTextBased?.() && x.name === channelName && x.type === ChannelType.GuildAnnouncement);
-  if (!c) c = await guild.channels.create({ name: channelName, type: ChannelType.GuildText, parent: parent.id, reason: 'Node Hub final Discord structure' });
-  else if (c.parentId !== parent.id) await c.setParent(parent.id, { lockPermissions: false });
-  return c;
-}
-
-async function announcementChannel(guild, name, parent) {
-  const channelName = slug(name);
-  let c = guild.channels.cache.find(x => x.name === channelName && (x.type === ChannelType.GuildText || x.type === ChannelType.GuildAnnouncement));
-  if (!c) c = await guild.channels.create({ name: channelName, type: ChannelType.GuildAnnouncement, parent: parent.id, reason: 'Node Hub announcements channel' });
-  else if (c.parentId !== parent.id) await c.setParent(parent.id, { lockPermissions: false });
-  if (c.type === ChannelType.GuildText) await c.setType(ChannelType.GuildAnnouncement, 'Convert Node Hub announcements to Announcement Channel').catch(() => {});
-  return c;
-}
-
-async function voiceChannel(guild, name, parent) {
-  const channelName = slug(name);
-  let c = guild.channels.cache.find(x => x.type === ChannelType.GuildVoice && x.name === channelName);
-  if (!c) c = await guild.channels.create({ name: channelName, type: ChannelType.GuildVoice, parent: parent.id, reason: 'Node Hub voice structure' });
-  else if (c.parentId !== parent.id) await c.setParent(parent.id, { lockPermissions: false });
-  return c;
-}
-
-async function lockBotChannel(channel, guild) {
-  await channel.permissionOverwrites.edit(guild.roles.everyone, {
-    ViewChannel: true,
-    SendMessages: false,
-    AddReactions: false,
-    CreatePublicThreads: false,
-    CreatePrivateThreads: false,
-  }).catch(() => {});
-}
-
-async function openChannel(channel, guild) {
-  await channel.permissionOverwrites.edit(guild.roles.everyone, {
-    ViewChannel: true,
-    SendMessages: true,
-    AddReactions: true,
-  }).catch(() => {});
-}
-
-async function configure(guild) {
-  const categories = new Map();
-  for (const section of FINAL_STRUCTURE) categories.set(section.category, await category(guild, section.category));
-
-  for (const section of FINAL_STRUCTURE) {
-    const parent = categories.get(section.category);
-    for (const name of section.text || []) {
-      const c = name === 'announcements'
-        ? await announcementChannel(guild, name, parent)
-        : await textChannel(guild, name, parent);
-
-      if (BOT_ONLY.has(slug(name))) await lockBotChannel(c, guild);
-      else if (name === EVENTS) await lockBotChannel(c, guild);
-      else if (OPEN.has(slug(name))) await openChannel(c, guild);
-      else await openChannel(c, guild);
-    }
-    for (const name of section.voice || []) await voiceChannel(guild, name, parent);
-  }
-
-  const rules = guild.channels.cache.find(c => c.name === 'rules' && c.type === ChannelType.GuildText);
-  if (rules) await guild.setRulesChannel(rules, 'Node Hub official Discord rules channel').catch(error => console.error('Could not set official rules channel:', error.message));
-
-  const announcements = guild.channels.cache.find(c => c.name === 'announcements' && c.type === ChannelType.GuildAnnouncement);
-  if (announcements) await guild.setPublicUpdatesChannel(announcements, 'Node Hub community announcements channel').catch(() => {});
-
-  console.log(`Node Hub final Discord structure synchronized for ${guild.name}.`);
-}
-
-const originalLogin = Client.prototype.login;
-Client.prototype.login = function patchedLogin(token) {
-  if (!this.__nodeHubStructureFinalizer) {
-    this.__nodeHubStructureFinalizer = true;
-    this.once('ready', () => {
-      for (const guild of this.guilds.cache.values()) configure(guild).catch(error => console.error('Discord structure finalizer failed:', error));
-    });
-    this.on('interactionCreate', interaction => {
-      if (interaction.isChatInputCommand?.() && interaction.commandName === 'setup-server' && interaction.guild) {
-        setTimeout(() => configure(interaction.guild).catch(error => console.error('Post-setup Discord synchronization failed:', error)), 5000);
-      }
-    });
-  }
-  return originalLogin.call(this, token);
+const TEAM = [['team-chat', '💬-team-chat'], ['tasks', '📋-tasks'], ['development', '💻-development'], ['internal-bugs', '🐛-internal-bugs'], ['team-node-status', '📡-node-status'], ['event-log', '📜-event-log']];
+const ROLES = ['👑 Founder','🛡️ Administrator','⚙️ Developer','🛡️ Moderator','🤝 Partner','🎨 Creator','🖥️ Node Operator','💰 Supporter','🏆 Legend','⭐ Elite','🟢 Active','🦙 Uplander','🎮 Games','🚗 GTA','🏠 Upland Listings','🏆 Treasure Hunt','📰 Upland News','📺 Node Hub Content','🌎 Community','🚀 Server Booster','🤖 Bot','👤 Member'];
+const TEAM_ROLES = ['Founder','Administrator','Developer','Moderator','Node Operator'];
+const base = n => String(n||'').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'');
+const roleBase = n => String(n||'').replace(/^[^A-Za-z0-9]+/,'').trim();
+const findCategory = (g,n) => g.channels.cache.find(c => c.type===ChannelType.GuildCategory && base(c.name)===base(n));
+const findChannel = (g, item) => {
+  const names = [item[0], ...(item[3]||[])].map(base);
+  return g.channels.cache.find(c => c.type!==ChannelType.GuildCategory && names.includes(base(c.name)));
 };
+async function role(g,n){ let r=g.roles.cache.find(x=>roleBase(x.name).toLowerCase()===n.toLowerCase()); if(!r) r=await g.roles.create({name:n,color:0x5865F2,reason:'Node Hub New Box Games template'}); else if(r.name!==n) await r.setName(n,'Node Hub role naming standard').catch(()=>{}); return r; }
+async function category(g,name){ let c=findCategory(g,name); if(!c)c=await g.channels.create({name,type:ChannelType.GuildCategory,reason:'Node Hub New Box Games template'}); return c; }
+async function text(g,item,parent){ let c=findChannel(g,item); const [,display,mode]=item; if(!c)c=await g.channels.create({name:display,type:mode==='announcement'?ChannelType.GuildAnnouncement:ChannelType.GuildText,parent:parent.id,reason:'Node Hub New Box Games template'}); else {if(c.name!==display)await c.setName(display,'Node Hub channel naming standard').catch(()=>{});if(c.parentId!==parent.id)await c.setParent(parent.id,{lockPermissions:false}).catch(()=>{});if(mode==='announcement'&&c.type===ChannelType.GuildText&&c.setType)await c.setType(ChannelType.GuildAnnouncement).catch(()=>{});} return c; }
+async function voice(g,item,parent){ let c=findChannel(g,item); if(!c||c.type!==ChannelType.GuildVoice)c=null; if(!c)c=await g.channels.create({name:item[1],type:ChannelType.GuildVoice,parent:parent.id,reason:'Node Hub Radio Box voice channel'}); else {if(c.name!==item[1])await c.setName(item[1],'Node Hub voice naming standard').catch(()=>{});if(c.parentId!==parent.id)await c.setParent(parent.id,{lockPermissions:false}).catch(()=>{});} return c; }
+async function publicPermissions(c,mode,g){ if(mode==='open')return c.permissionOverwrites.edit(g.roles.everyone,{ViewChannel:true,SendMessages:true,AddReactions:true}).catch(()=>{}); return c.permissionOverwrites.edit(g.roles.everyone,{ViewChannel:true,SendMessages:false,AddReactions:false,CreatePublicThreads:false,CreatePrivateThreads:false}).catch(()=>{}); }
+async function team(g,roles){ let c=g.channels.cache.find(x=>x.type===ChannelType.GuildCategory&&['team','teamonly'].includes(base(x.name))); if(!c)c=await g.channels.create({name:'🔒 TEAM',type:ChannelType.GuildCategory,reason:'Node Hub private team area'}); else if(c.name!=='🔒 TEAM')await c.setName('🔒 TEAM').catch(()=>{}); await c.permissionOverwrites.edit(g.roles.everyone,{ViewChannel:false}).catch(()=>{}); for(const n of TEAM_ROLES){const r=roles.get(n);if(r)await c.permissionOverwrites.edit(r.id,{ViewChannel:true}).catch(()=>{});} for(const [k,n] of TEAM){const item=[k,n];const ch=await text(g,item,c);await ch.permissionOverwrites.edit(g.roles.everyone,{ViewChannel:false,SendMessages:false}).catch(()=>{});for(const rn of TEAM_ROLES){const r=roles.get(rn);if(r)await ch.permissionOverwrites.edit(r.id,{ViewChannel:true,SendMessages:true,ReadMessageHistory:true}).catch(()=>{});}} }
+async function synchronize(guild){ await guild.channels.fetch(); await guild.roles.fetch(); const roles=new Map(); for(const display of ROLES){const n=roleBase(display);roles.set(n,await role(guild,n));} for(const [cat,items] of STRUCTURE){const p=await category(guild,cat);for(const item of items){const c=item[2]==='voice'?await voice(guild,item,p):await text(guild,item,p);if(item[2]!=='voice')await publicPermissions(c,item[2],guild);}} await team(guild,roles); console.log(`NODE_HUB_NEW_BOX_TEMPLATE_SYNC_OK:${guild.id}:${guild.name}`);}
+const originalLogin=Client.prototype.login;
+Client.prototype.login=function(token){if(!this.__nodeHubTemplateAttached){this.__nodeHubTemplateAttached=true;this.once('ready',async()=>{for(const g of this.guilds.cache.values())try{await synchronize(g)}catch(e){console.error(`NODE_HUB_NEW_BOX_TEMPLATE_SYNC_ERROR:${g.id}:`,e);}});}return originalLogin.call(this,token);};
+module.exports={synchronize};

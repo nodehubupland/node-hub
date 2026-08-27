@@ -2,25 +2,15 @@ require('dotenv').config();
 require('./force-structure');
 
 const express = require('express');
-const {
-  Client,
-  GatewayIntentBits,
-  PermissionFlagsBits,
-} = require('discord.js');
-const { setupUplandData } = require('./upland-data-v3');
+const { Client, GatewayIntentBits, PermissionFlagsBits } = require('discord.js');
+const { setupUplandData } = require('./upland-data-v4');
 
 const TOKEN = process.env.DISCORD_TOKEN;
 const discordEnabled = Boolean(TOKEN && process.env.DISCORD_CLIENT_ID);
 const UPLAND_WEBHOOK_FORWARD_URL = process.env.UPLAND_WEBHOOK_FORWARD_URL;
 
 const client = discordEnabled ? new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMembers,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent,
-    GatewayIntentBits.GuildVoiceStates,
-  ],
+  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.GuildVoiceStates],
 }) : null;
 
 const spamTracker = new Map();
@@ -39,21 +29,17 @@ if (discordEnabled) {
     const active = (spamTracker.get(message.author.id) || []).filter(t => now - t < SPAM_WINDOW_MS);
     active.push(now);
     spamTracker.set(message.author.id, active);
-
     if (active.length >= SPAM_LIMIT) {
       spamTracker.set(message.author.id, []);
       const member = message.member;
       const protectedMember = member?.id === message.guild.ownerId || member?.permissions.has(PermissionFlagsBits.Administrator);
       const me = message.guild.members.me;
-      if (!protectedMember && member?.moderatable && me?.permissions.has(PermissionFlagsBits.ModerateMembers)) {
-        await member.timeout(60000, 'Node Hub anti-spam').catch(() => {});
-      }
+      if (!protectedMember && member?.moderatable && me?.permissions.has(PermissionFlagsBits.ModerateMembers)) await member.timeout(60000, 'Node Hub anti-spam').catch(() => {});
     }
   });
 
   client.on('error', error => console.error('DISCORD_CLIENT_ERROR:', error.message));
   client.on('warn', warning => console.warn('DISCORD_CLIENT_WARNING:', warning));
-
   setupUplandData(client);
   client.login(TOKEN).catch(error => console.error('Discord login failed:', error));
 }
@@ -66,18 +52,8 @@ server.get('/health', (_req, res) => res.status(200).json({ status: 'ok', servic
 server.get('/webhook', (_req, res) => res.redirect(302, '/'));
 server.post('/webhook', async (req, res) => {
   try {
-    if (!UPLAND_WEBHOOK_FORWARD_URL) {
-      console.error('UPLAND_WEBHOOK_FORWARD_URL is not configured');
-      return res.status(503).json({ status: 'error', message: 'Webhook forwarding is not configured' });
-    }
-
-    const upstream = await fetch(UPLAND_WEBHOOK_FORWARD_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(req.body || {}),
-    });
-    const text = await upstream.text();
-    console.log('Upland webhook forwarded:', upstream.status, text.slice(0, 500));
+    if (!UPLAND_WEBHOOK_FORWARD_URL) return res.status(503).json({ status: 'error', message: 'Webhook forwarding is not configured' });
+    const upstream = await fetch(UPLAND_WEBHOOK_FORWARD_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(req.body || {}) });
     return res.status(upstream.ok ? 200 : 502).json({ status: upstream.ok ? 'ok' : 'error' });
   } catch (error) {
     console.error('Upland webhook forwarding failed:', error.message);

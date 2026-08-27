@@ -11,6 +11,7 @@ const { setupUplandData } = require('./upland-data-v2');
 
 const TOKEN = process.env.DISCORD_TOKEN;
 const discordEnabled = Boolean(TOKEN && process.env.DISCORD_CLIENT_ID);
+const UPLAND_WEBHOOK_FORWARD_URL = process.env.UPLAND_WEBHOOK_FORWARD_URL;
 
 const client = discordEnabled ? new Client({
   intents: [
@@ -53,7 +54,6 @@ if (discordEnabled) {
   client.on('error', error => console.error('DISCORD_CLIENT_ERROR:', error.message));
   client.on('warn', warning => console.warn('DISCORD_CLIENT_WARNING:', warning));
 
-  // Upland data commands are the only application feature registered here.
   setupUplandData(client);
   client.login(TOKEN).catch(error => console.error('Discord login failed:', error));
 }
@@ -64,9 +64,25 @@ server.use(express.static(require('path').join(__dirname, '..')));
 server.get('/', (_req, res) => res.sendFile(require('path').join(__dirname, '..', 'index.html')));
 server.get('/health', (_req, res) => res.status(200).json({ status: 'ok', service: 'Node Hub' }));
 server.get('/webhook', (_req, res) => res.redirect(302, '/'));
-server.post('/webhook', (req, res) => {
-  console.log('Upland webhook received:', JSON.stringify(req.body || {}));
-  res.status(200).json({ status: 'ok' });
+server.post('/webhook', async (req, res) => {
+  try {
+    if (!UPLAND_WEBHOOK_FORWARD_URL) {
+      console.error('UPLAND_WEBHOOK_FORWARD_URL is not configured');
+      return res.status(503).json({ status: 'error', message: 'Webhook forwarding is not configured' });
+    }
+
+    const upstream = await fetch(UPLAND_WEBHOOK_FORWARD_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(req.body || {}),
+    });
+    const text = await upstream.text();
+    console.log('Upland webhook forwarded:', upstream.status, text.slice(0, 500));
+    return res.status(upstream.ok ? 200 : 502).json({ status: upstream.ok ? 'ok' : 'error' });
+  } catch (error) {
+    console.error('Upland webhook forwarding failed:', error.message);
+    return res.status(502).json({ status: 'error' });
+  }
 });
 server.use((_req, res) => res.status(404).json({ status: 404, message: 'Not Found' }));
 const PORT = Number(process.env.PORT || 10000);

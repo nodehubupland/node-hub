@@ -4,6 +4,7 @@ const UPLAND_APP_ID = process.env.UPLAND_APP_ID;
 const UPLAND_SECRET_KEY = process.env.UPLAND_SECRET_KEY;
 const GUILD_ID = process.env.DISCORD_GUILD_ID;
 const CLIENT_ID = process.env.DISCORD_CLIENT_ID;
+const API_BASE = 'https://api.prod.upland.me/developers-api';
 
 const CHANNELS = {
   treasureResults: 'treasure-results',
@@ -17,17 +18,60 @@ const CHANNELS = {
 function normalizeIgn(value) {
   return String(value || '').trim().replace(/^@/, '').replace(/\s+/g, '').toLowerCase();
 }
-function basicAuth() { return 'Basic ' + Buffer.from(`${UPLAND_APP_ID}:${UPLAND_SECRET_KEY}`).toString('base64'); }
-function findTextChannel(guild, name) { return guild.channels.cache.find(channel => channel.isTextBased?.() && channel.name === name); }
+
+function basicAuth() {
+  return 'Basic ' + Buffer.from(`${UPLAND_APP_ID}:${UPLAND_SECRET_KEY}`).toString('base64');
+}
+
+function findTextChannel(guild, name) {
+  return guild.channels.cache.find(channel => channel.isTextBased?.() && channel.name === name);
+}
+
+async function uplandGet(path, params = {}) {
+  if (!UPLAND_APP_ID || !UPLAND_SECRET_KEY) throw new Error('UPLAND_API_NOT_CONFIGURED');
+  const url = new URL(`${API_BASE}${path}`);
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== null && value !== '') url.searchParams.set(key, String(value));
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000);
+  try {
+    const response = await fetch(url, {
+      headers: { Authorization: basicAuth(), Accept: 'application/json' },
+      signal: controller.signal,
+    });
+    const text = await response.text();
+    if (!response.ok) {
+      console.error(`UPLAND_API_ERROR:${response.status}:${path}:${text.slice(0, 500)}`);
+      throw new Error(`UPLAND_API_${response.status}`);
+    }
+    try {
+      return JSON.parse(text);
+    } catch {
+      throw new Error('UPLAND_API_INVALID_JSON');
+    }
+  } catch (error) {
+    if (error.name === 'AbortError') throw new Error('UPLAND_API_TIMEOUT');
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+function unwrapResults(body) {
+  if (Array.isArray(body?.results)) return body.results;
+  if (Array.isArray(body?.results?.results)) return body.results.results;
+  return [];
+}
 
 async function fetchTreasurePage(page = 1, pageSize = 100) {
-  if (!UPLAND_APP_ID || !UPLAND_SECRET_KEY) throw new Error('UPLAND_API_NOT_CONFIGURED');
-  const url = `https://api.prod.upland.me/developers-api/treasures-history?currentPage=${page}&pageSize=${pageSize}`;
-  const response = await fetch(url, { headers: { Authorization: basicAuth(), Accept: 'application/json' } });
-  if (!response.ok) throw new Error(`UPLAND_API_${response.status}`);
-  const body = await response.json();
-  return Array.isArray(body?.results) ? body.results : Array.isArray(body?.results?.results) ? body.results.results : [];
+  return unwrapResults(await uplandGet('/treasures-history', {
+    currentPage: page,
+    pageSize,
+  }));
 }
+
 async function fetchRecentTreasures(maxPages = 10) {
   const rows = [];
   for (let page = 1; page <= maxPages; page++) {
@@ -38,9 +82,41 @@ async function fetchRecentTreasures(maxPages = 10) {
   }
   return rows;
 }
-function upx(value) { return `${Number(value || 0).toLocaleString('en-US')} UPX`; }
-function treasureDate(row) { return new Date(row.lockedAt || row.spawnAt || 0); }
-function dayKey(date = new Date()) { return date.toISOString().slice(0, 10); }
+
+async function fetchCities() {
+  const body = await uplandGet('/cities');
+  return Array.isArray(body?.cities) ? body.cities : unwrapResults(body);
+}
+
+async function fetchProperties(cityId, page = 1, pageSize = 50) {
+  const body = await uplandGet('/v2/properties', { cityId, currentPage: page, pageSize });
+  return unwrapResults(body);
+}
+
+async function fetchNeighborhoods(cityId) {
+  return unwrapResults(await uplandGet('/neighborhoods', { cityId }));
+}
+
+async function fetchCollections() {
+  return unwrapResults(await uplandGet('/collections'));
+}
+
+async function fetchSends(page = 1, pageSize = 100) {
+  return unwrapResults(await uplandGet('/sends', { currentPage: page, pageSize }));
+}
+
+function upx(value) {
+  return `${Number(value || 0).toLocaleString('en-US')} UPX`;
+}
+
+function treasureDate(row) {
+  return new Date(row.lockedAt || row.spawnAt || 0);
+}
+
+function dayKey(date = new Date()) {
+  return date.toISOString().slice(0, 10);
+}
+
 async function messageExists(channel, marker) {
   const recent = await channel.messages.fetch({ limit: 50 }).catch(() => null);
   return Boolean(recent?.some(message => message.author?.bot && message.embeds?.some(embed => String(embed.footer?.text || '').includes(marker))));
@@ -52,13 +128,17 @@ async function publishTreasureResults(guild, rows) {
   const latest = rows.slice().sort((a, b) => treasureDate(b) - treasureDate(a))[0];
   const marker = `NODEHUB_TREASURE:${latest.lockedAt || latest.spawnAt || ''}:${latest.userName || ''}:${latest.reward || 0}`;
   if (await messageExists(channel, marker)) return false;
-  const embed = new EmbedBuilder().setTitle('TREASURE HUNT RESULTS').setDescription([
-    `**Player:** ${latest.userName || 'Unknown'}`,
-    `**Reward:** ${upx(latest.reward)}`,
-    `**Type:** ${latest.treasureType || 'Unknown'}`,
-    `**Location:** ${latest.fullAddress || 'Unknown'}`,
-    `**Collected:** ${latest.lockedAt ? new Date(latest.lockedAt).toISOString() : 'Unknown'}`,
-  ].join('\n')).setFooter({ text: marker }).setTimestamp();
+  const embed = new EmbedBuilder()
+    .setTitle('TREASURE HUNT RESULTS')
+    .setDescription([
+      `**Player:** ${latest.userName || 'Unknown'}`,
+      `**Reward:** ${upx(latest.reward)}`,
+      `**Type:** ${latest.treasureType || 'Unknown'}`,
+      `**Location:** ${latest.fullAddress || 'Unknown'}`,
+      `**Collected:** ${latest.lockedAt ? new Date(latest.lockedAt).toISOString() : 'Unknown'}`,
+    ].join('\n'))
+    .setFooter({ text: marker })
+    .setTimestamp();
   await channel.send({ embeds: [embed] });
   return true;
 }
@@ -90,21 +170,27 @@ async function publishDailyRanking(guild, rows) {
 async function publishGuide(guild) {
   const channel = findTextChannel(guild, CHANNELS.dataGuide);
   if (!channel) return false;
-  const marker = 'NODEHUB_DATA_GUIDE_V1';
+  const marker = 'NODEHUB_DATA_GUIDE_V2';
   if (await messageExists(channel, marker)) return false;
   const embed = new EmbedBuilder().setTitle('UPLAND DATA GUIDE').setDescription([
     '**/treasure igname**',
     'Searches public Treasure Hunt history for an Upland player.',
     '',
+    '**/player-stats igname**',
+    'Shows public Treasure Hunt statistics calculated from Upland data.',
+    '',
     '**Data channels**',
     '`treasure-results` receives automatic Treasure Hunt results.',
     '`daily-ranking` receives the daily public Treasure ranking.',
-    '`player-stats` provides public Treasure statistics for a player.',
-    '`listing-alerts` is reserved for verified marketplace alerts.',
+    '`player-stats` is reserved for player data and statistics.',
+    '`listing-alerts` is reserved for verified marketplace data only.',
     '`upland-alerts` is reserved for verified Upland announcements and alerts.',
     '',
+    '**Public API data currently supported**',
+    'Treasure history, cities, properties, neighborhoods, collections and sends.',
+    '',
     '**Important**',
-    'Only information available through authorized Upland data sources will be published. Private account data requires the player to authorize the Node Hub application.',
+    'Private player profile, balances and assets require the player to authorize the Node Hub application. They are not treated as public data.',
   ].join('\n')).setFooter({ text: marker }).setTimestamp();
   await channel.send({ embeds: [embed] });
   return true;
@@ -133,11 +219,15 @@ async function playerStats(ign) {
 async function registerDataCommands() {
   if (!CLIENT_ID || !process.env.DISCORD_TOKEN || !GUILD_ID) return;
   const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
-  const command = new SlashCommandBuilder().setName('player-stats').setDescription('Show public Upland Treasure Hunt statistics for a player.').addStringOption(option => option.setName('igname').setDescription('Upland IG Name, exactly as shown in the game.').setRequired(true)).toJSON();
+  const commands = [
+    new SlashCommandBuilder().setName('player-stats').setDescription('Show public Upland Treasure Hunt statistics for a player.').addStringOption(option => option.setName('igname').setDescription('Upland IG Name, exactly as shown in the game.').setRequired(true)),
+    new SlashCommandBuilder().setName('upland-cities').setDescription('List cities available through the public Upland API.'),
+    new SlashCommandBuilder().setName('upland-collections').setDescription('List collections available through the public Upland API.'),
+  ].map(command => command.toJSON());
   const structuralCommands = new Set(['setup-server', 'post-rules', 'post-welcome']);
   const existing = await rest.get(Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID));
-  const filtered = existing.filter(item => !structuralCommands.has(item.name) && item.name !== 'player-stats');
-  await rest.put(Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID), { body: [...filtered, command] });
+  const filtered = existing.filter(item => !structuralCommands.has(item.name) && !commands.some(command => command.name === item.name));
+  await rest.put(Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID), { body: [...filtered, ...commands] });
 }
 
 function setupUplandData(client) {
@@ -151,15 +241,47 @@ function setupUplandData(client) {
         await publishTreasureResults(guild, rows).catch(error => console.error('UPLAND_TREASURE_PUBLISH_ERROR:', error.message));
         await publishDailyRanking(guild, rows).catch(error => console.error('UPLAND_RANKING_PUBLISH_ERROR:', error.message));
       }
-    } catch (error) { console.error('UPLAND_DATA_INIT_ERROR:', error.message); }
+    } catch (error) {
+      console.error('UPLAND_DATA_INIT_ERROR:', error.message);
+    }
   });
 
   client.on('interactionCreate', async interaction => {
-    if (!interaction.isChatInputCommand() || interaction.commandName !== 'player-stats') return;
-    const ign = interaction.options.getString('igname', true);
-    await interaction.deferReply();
-    try { await interaction.editReply({ embeds: [await playerStats(ign)] }); }
-    catch (error) { await interaction.editReply(`Unable to retrieve public player data right now. ${error.message}`); }
+    if (!interaction.isChatInputCommand()) return;
+
+    if (interaction.commandName === 'player-stats') {
+      const ign = interaction.options.getString('igname', true);
+      await interaction.deferReply();
+      try {
+        await interaction.editReply({ embeds: [await playerStats(ign)] });
+      } catch (error) {
+        await interaction.editReply(`Unable to retrieve public player data right now. ${error.message}`);
+      }
+      return;
+    }
+
+    if (interaction.commandName === 'upland-cities') {
+      await interaction.deferReply();
+      try {
+        const cities = await fetchCities();
+        const lines = cities.slice(0, 30).map(city => `**${city.name}** — ${city.stateName || city.countryName || ''}`);
+        await interaction.editReply({ embeds: [new EmbedBuilder().setTitle('UPLAND CITIES').setDescription(lines.join('\n') || 'No cities returned by the public API.')] });
+      } catch (error) {
+        await interaction.editReply(`Unable to retrieve Upland cities right now. ${error.message}`);
+      }
+      return;
+    }
+
+    if (interaction.commandName === 'upland-collections') {
+      await interaction.deferReply();
+      try {
+        const collections = await fetchCollections();
+        const lines = collections.slice(0, 25).map(collection => `**${collection.name}** — ${collection.description || 'No description'} · Boost ${collection.yieldBoost ?? 'N/A'}`);
+        await interaction.editReply({ embeds: [new EmbedBuilder().setTitle('UPLAND COLLECTIONS').setDescription(lines.join('\n') || 'No collections returned by the public API.')] });
+      } catch (error) {
+        await interaction.editReply(`Unable to retrieve Upland collections right now. ${error.message}`);
+      }
+    }
   });
 
   setInterval(async () => {
@@ -169,9 +291,19 @@ function setupUplandData(client) {
         if (!rows.length) continue;
         await publishTreasureResults(guild, rows);
         await publishDailyRanking(guild, rows);
-      } catch (error) { console.error('UPLAND_DATA_SCHEDULE_ERROR:', error.message); }
+      } catch (error) {
+        console.error('UPLAND_DATA_SCHEDULE_ERROR:', error.message);
+      }
     }
   }, 15 * 60 * 1000);
 }
 
-module.exports = { setupUplandData };
+module.exports = {
+  setupUplandData,
+  fetchCities,
+  fetchProperties,
+  fetchNeighborhoods,
+  fetchCollections,
+  fetchSends,
+  fetchRecentTreasures,
+};

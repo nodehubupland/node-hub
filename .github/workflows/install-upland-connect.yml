@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - upland-connect.js
+      - admin-upland.js
       - .github/workflows/install-upland-connect.yml
 
 permissions:
@@ -16,31 +17,42 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install Upland connection script
+      - name: Install Upland connection scripts
         run: |
           python - <<'PY'
           from pathlib import Path
-          path = Path("index.html")
-          text = path.read_text(encoding="utf-8")
-          tag = '    <script src="upland-connect.js?v=20260825-v1"></script>\n'
+
+          index = Path("index.html")
+          text = index.read_text(encoding="utf-8")
+          tag = '    <script src="upland-connect.js?v=20260827-v4"></script>\n'
           if 'src="upland-connect.js' not in text:
               marker = '</body>'
               if marker not in text:
                   raise SystemExit("Could not find </body> in index.html")
               text = text.replace(marker, tag + marker, 1)
-              path.write_text(text, encoding="utf-8")
+              index.write_text(text, encoding="utf-8")
+
+          admin = Path("admin.html")
+          text = admin.read_text(encoding="utf-8")
+          tag = '    <script src="admin-upland.js?v=20260827-v1"></script>\n'
+          if 'src="admin-upland.js' not in text:
+              marker = '</body>'
+              if marker not in text:
+                  raise SystemExit("Could not find </body> in admin.html")
+              text = text.replace(marker, tag + marker, 1)
+              admin.write_text(text, encoding="utf-8")
           PY
 
       - name: Commit frontend update
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add index.html
+          git add index.html admin.html
           if git diff --cached --quiet; then
             echo "No changes needed."
           else
-            git commit -m "Load Upland account connection"
+            git commit -m "Add Upland connection to admin dashboard"
             git push
           fi
 
-# Triggered after initial workflow creation to install the V1 connection script.
+# Installs the Upland connection control on both the user and admin dashboards.

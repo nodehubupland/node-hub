@@ -2,6 +2,7 @@
 (function () {
   const FUNCTION_NAME = 'upland-connect';
   let pollTimer = null;
+  let bootTimer = null;
 
   function esc(value) {
     return String(value ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#039;' }[c]));
@@ -24,7 +25,7 @@
 
   function render(box, connection) {
     if (!connection || ['disconnected', 'failed'].includes(connection.status)) {
-      box.innerHTML = `<span class="eyebrow">UPLAND ACCOUNT</span><h2 style="margin-top:8px">Connect Upland Account</h2><p>Authorize this Node Hub account with Upland to enable Upland API features.</p><button id="admin-upland-connect" class="button button-primary" type="button">Connect Upland Account</button><p id="admin-upland-message" style="margin:14px 0 0"></p>`;
+      box.innerHTML = `<span class="eyebrow">UPLAND ACCOUNT</span><h2 style="margin-top:8px">Connect Upland Account</h2><p>Authorize your Upland account with Node Hub to enable Upland API features.</p><button id="admin-upland-connect" class="button button-primary" type="button">Connect Upland Account</button><p id="admin-upland-message" style="margin:14px 0 0"></p>`;
       box.querySelector('#admin-upland-connect').addEventListener('click', startConnection);
       return;
     }
@@ -65,7 +66,7 @@
     const box = document.getElementById('admin-upland-account');
     const button = box?.querySelector('#admin-upland-connect');
     const message = box?.querySelector('#admin-upland-message');
-    if (!box) return;
+    if (!box || !currentUser) return;
     if (button) { button.disabled = true; button.textContent = 'Generating code...'; }
     if (message) message.textContent = '';
     try {
@@ -83,14 +84,29 @@
 
   function mount() {
     const box = document.getElementById('admin-upland-account');
-    if (!box || !currentUser) return;
+    if (!box || !currentUser) return false;
     if (!box.dataset.initialized) {
       box.dataset.initialized = '1';
       refresh(box);
     }
+    return true;
+  }
+
+  function boot() {
+    if (mount()) return;
+    if (bootTimer) clearInterval(bootTimer);
+    bootTimer = setInterval(() => {
+      if (mount()) {
+        clearInterval(bootTimer);
+        bootTimer = null;
+      }
+    }, 500);
+    setTimeout(() => {
+      if (bootTimer) { clearInterval(bootTimer); bootTimer = null; }
+    }, 15000);
   }
 
   window.__nodehubAdminUplandMount = mount;
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount);
-  else mount();
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
 })();

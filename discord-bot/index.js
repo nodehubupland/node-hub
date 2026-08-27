@@ -6,9 +6,8 @@ const {
   Client,
   GatewayIntentBits,
   PermissionFlagsBits,
-  ChannelType,
-  EmbedBuilder,
 } = require('discord.js');
+const { setupUplandData } = require('./upland-data-v2');
 
 const TOKEN = process.env.DISCORD_TOKEN;
 const discordEnabled = Boolean(TOKEN && process.env.DISCORD_CLIENT_ID);
@@ -22,18 +21,6 @@ const client = discordEnabled ? new Client({
     GatewayIntentBits.GuildVoiceStates,
   ],
 }) : null;
-
-function slug(name) {
-  return String(name || '').toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
-}
-
-function findChannel(guild, name) {
-  const wanted = slug(name);
-  return guild.channels.cache.find(c =>
-    (c.type === ChannelType.GuildText || c.type === ChannelType.GuildAnnouncement || c.type === ChannelType.GuildVoice) &&
-    c.name === wanted
-  );
-}
 
 const spamTracker = new Map();
 const SPAM_LIMIT = 6;
@@ -63,14 +50,11 @@ if (discordEnabled) {
     }
   });
 
-  client.on('error', error => {
-    console.error('DISCORD_CLIENT_ERROR:', error.message);
-  });
+  client.on('error', error => console.error('DISCORD_CLIENT_ERROR:', error.message));
+  client.on('warn', warning => console.warn('DISCORD_CLIENT_WARNING:', warning));
 
-  client.on('warn', warning => {
-    console.warn('DISCORD_CLIENT_WARNING:', warning);
-  });
-
+  // Upland data commands are the only application feature registered here.
+  setupUplandData(client);
   client.login(TOKEN).catch(error => console.error('Discord login failed:', error));
 }
 

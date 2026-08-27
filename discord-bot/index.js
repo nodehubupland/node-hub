@@ -7,7 +7,7 @@ const {
   GatewayIntentBits,
   PermissionFlagsBits,
 } = require('discord.js');
-const { setupUplandData } = require('./upland-data-v2');
+const { setupUplandData } = require('./upland-data-v3');
 
 const TOKEN = process.env.DISCORD_TOKEN;
 const discordEnabled = Boolean(TOKEN && process.env.DISCORD_CLIENT_ID);

@@ -9,7 +9,7 @@ const {
   GuildChannel,
   Role,
 } = require('discord.js');
-const { setupUplandData } = require('./upland-data');
+const { setupUplandData } = require('./upland-data-v2');
 
 function frozen(label) {
   return async function frozenMutation() {
@@ -18,7 +18,6 @@ function frozen(label) {
   };
 }
 
-// Hard safety guard: this bot instance cannot add/remove roles or mutate the role list.
 if (!GuildMemberRoleManager.prototype.__nodeHubRolesFrozen) {
   GuildMemberRoleManager.prototype.__nodeHubRolesFrozen = true;
   GuildMemberRoleManager.prototype.add = frozen('member-role-add');
@@ -33,7 +32,6 @@ if (RoleManager?.prototype && !RoleManager.prototype.__nodeHubRoleManagerFrozen)
   RoleManager.prototype.edit = frozen('role-edit');
 }
 
-// Hard safety guard: no channel/category creation, deletion, moving or renaming.
 if (GuildChannelManager?.prototype && !GuildChannelManager.prototype.__nodeHubChannelManagerFrozen) {
   GuildChannelManager.prototype.__nodeHubChannelManagerFrozen = true;
   GuildChannelManager.prototype.create = frozen('channel-create');

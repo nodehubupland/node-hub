@@ -1,7 +1,21 @@
-// Discord structure is frozen for New Box Games.
-// This module must never create, move, rename, delete or permission-edit channels/roles.
-const { Client, ChannelType } = require('discord.js');
+// Discord structure and role assignments are frozen for New Box Games.
+// This module must never create, move, rename, delete, or permission-edit channels/roles.
+const { Client, ChannelType, GuildMemberRoleManager } = require('discord.js');
 const { setupUplandData } = require('./upland-data');
+
+// Hard safety guard: this bot instance cannot add or remove roles while the server is frozen.
+// This also protects against legacy listeners elsewhere in the bot code.
+if (!GuildMemberRoleManager.prototype.__nodeHubRolesFrozen) {
+  GuildMemberRoleManager.prototype.__nodeHubRolesFrozen = true;
+  GuildMemberRoleManager.prototype.add = async function frozenRoleAdd() {
+    console.log('NODE_HUB_ROLE_MUTATION_BLOCKED:add');
+    return this;
+  };
+  GuildMemberRoleManager.prototype.remove = async function frozenRoleRemove() {
+    console.log('NODE_HUB_ROLE_MUTATION_BLOCKED:remove');
+    return this;
+  };
+}
 
 async function auditGuild(guild) {
   await guild.channels.fetch();

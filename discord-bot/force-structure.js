@@ -9,7 +9,6 @@ const {
   GuildChannel,
   Role,
 } = require('discord.js');
-const { setupUplandData } = require('./upland-data-v2');
 
 function frozen(label) {
   return async function frozenMutation() {
@@ -99,7 +98,9 @@ Client.prototype.login = function frozenStructureLogin(token) {
     } catch (error) {
       console.error('NODE_HUB_XP_INIT_ERROR:', error);
     }
-    setupUplandData(this);
+    // Upland data is initialized exactly once by discord-bot/index.js.
+    // Do not load upland-data-v2 here, otherwise two interaction handlers
+    // respond to /treasure simultaneously and the legacy city lookup runs.
     this.once('ready', async () => {
       console.log('NODE_HUB_STRUCTURE_FROZEN: no channel/category/role synchronization will run.');
       for (const guild of this.guilds.cache.values()) {

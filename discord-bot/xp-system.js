@@ -1,4 +1,4 @@
-const { PermissionFlagsBits, ChannelType, EmbedBuilder } = require('discord.js');
+const { ChannelType, EmbedBuilder } = require('discord.js');
 
 const records = new Map();
 const messageCooldown = new Map();
@@ -48,38 +48,10 @@ function getRank(guildId, userId) {
   return index < 0 ? ranked.length + 1 : index + 1;
 }
 
-function isProtected(member) {
-  return member.id === member.guild.ownerId || member.permissions.has(PermissionFlagsBits.Administrator) || member.roles.cache.some(role => ['Founder', 'Administrator'].includes(role.name));
-}
-
-async function promote(member, oldLevel, newLevel) {
-  for (const threshold of ROLE_THRESHOLDS) {
-    if (threshold.level <= oldLevel || threshold.level > newLevel) continue;
-    const role = member.guild.roles.cache.find(candidate => candidate.name === threshold.role);
-    const botMember = member.guild.members.me;
-    if (role && botMember && role.position < botMember.roles.highest.position) {
-      await member.roles.add(role, `Node Hub XP promotion to level ${threshold.level}`).catch(() => {});
-    }
-
-    const leaderboard = member.guild.channels.cache.find(channel => channel.name === 'leaderboard' && channel.type === ChannelType.GuildText);
-    if (leaderboard) {
-      const embed = new EmbedBuilder()
-        .setTitle('Promotion / Promoção')
-        .setDescription(`Congratulations ${member}!\n\n**English:** You reached **Level ${threshold.level}** and earned **${threshold.role}**.\n**Português:** Você alcançou o **Nível ${threshold.level}** e recebeu **${threshold.role}**.`)
-        .setColor(role?.color || 0xF1C40F)
-        .setTimestamp();
-      await leaderboard.send({ embeds: [embed] }).catch(() => {});
-    }
-  }
-}
-
 async function addXp(member, amount) {
-  if (!member || member.user.bot || isProtected(member)) return;
+  if (!member || member.user.bot) return;
   const record = getRecord(member.guild.id, member.id);
-  const oldLevel = levelFromXp(record.xp);
   record.xp += amount;
-  const newLevel = levelFromXp(record.xp);
-  if (newLevel > oldLevel) await promote(member, oldLevel, newLevel);
 }
 
 function rankMessage(guild, member) {
@@ -101,7 +73,7 @@ async function updateLeaderboard(guild) {
     : 'No activity recorded yet. / Nenhuma atividade registrada ainda.';
   const recent = await channel.messages.fetch({ limit: 10 }).catch(() => null);
   const existing = recent?.find(message => message.author.id === guild.client.user.id && message.embeds.some(embed => embed.title === 'Node Hub Leaderboard'));
-  const embed = new EmbedBuilder().setTitle('Node Hub Leaderboard').setDescription(lines).setColor(0x5865F2).setFooter({ text: 'Discord activity ranking • XP progression is intentionally slow' }).setTimestamp();
+  const embed = new EmbedBuilder().setTitle('Node Hub Leaderboard').setDescription(lines).setColor(0x5865F2).setFooter({ text: 'Discord activity ranking • Roles are managed manually' }).setTimestamp();
   if (existing) await existing.edit({ embeds: [embed] }).catch(() => {});
   else await channel.send({ embeds: [embed] }).catch(() => {});
 }

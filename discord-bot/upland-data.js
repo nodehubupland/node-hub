@@ -78,17 +78,19 @@ async function testUplandConnection() {
   return Array.isArray(cities?.cities) ? cities.cities : unwrapResults(cities);
 }
 
-async function fetchTreasurePage(page = 1, pageSize = 100) {
+// Upland's documented treasure-history example uses currentPage=1&pageSize=1.
+// Keep the request small because larger page sizes have been returning HTTP 500 from the API.
+async function fetchTreasurePage(page = 1, pageSize = 1) {
   return unwrapResults(await uplandGet('/treasures-history', { currentPage: page, pageSize }));
 }
 
 async function fetchRecentTreasures(maxPages = 10) {
   const rows = [];
   for (let page = 1; page <= maxPages; page++) {
-    const results = await fetchTreasurePage(page, 100);
+    const results = await fetchTreasurePage(page, 1);
     if (!results.length) break;
     rows.push(...results);
-    if (results.length < 100) break;
+    if (results.length < 1) break;
   }
   return rows;
 }
@@ -166,7 +168,7 @@ async function publishGuide(guild) {
   if (await messageExists(channel, marker)) return false;
   const embed = new EmbedBuilder().setTitle('UPLAND DATA GUIDE').setDescription([
     '**/treasure igname**',
-    'Searches public Treasure Hunt history for an Upland player.',
+    'Searches public Upland Treasure Hunt history for an Upland player.',
     '',
     '**/player-stats igname**',
     'Shows public Treasure Hunt statistics calculated from Upland data.',
@@ -223,9 +225,10 @@ function setupUplandData(client) {
       await registerDataCommands();
       const cities = await testUplandConnection();
       console.log(`UPLAND_API_AUTH_OK: /cities returned ${cities.length} cities`);
+      const rows = await fetchRecentTreasures(10);
+      console.log(`UPLAND_TREASURE_HISTORY_OK: returned ${rows.length} records`);
       for (const guild of client.guilds.cache.values()) {
         await publishGuide(guild).catch(error => console.error('UPLAND_DATA_GUIDE_ERROR:', error.message));
-        const rows = await fetchRecentTreasures(10);
         await publishTreasureResults(guild, rows);
         await publishDailyRanking(guild, rows);
       }

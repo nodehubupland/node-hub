@@ -1,6 +1,6 @@
-// New Box Games now uses the approved Discord template finalizer.
-// The finalizer is safe for existing history: it never deletes or moves FILES.
+// New Box Games uses the approved Discord template finalizer and a safe legacy archive.
 require('./server-structure-finalizer');
+const { archiveLegacyChannels } = require('./archive-legacy-channels');
 
 const { Client, ChannelType } = require('discord.js');
 
@@ -39,7 +39,12 @@ Client.prototype.login = function safeLogin(token) {
     this.once('ready', async () => {
       console.log('NODE_HUB_SERVER_AUDIT: approved New Box template synchronization enabled.');
       for (const guild of this.guilds.cache.values()) {
-        try { await auditGuild(guild); } catch (error) { console.error(`NODE_HUB_SERVER_AUDIT_ERROR:${guild.id}:`, error); }
+        try {
+          await auditGuild(guild);
+          await archiveLegacyChannels(guild);
+        } catch (error) {
+          console.error(`NODE_HUB_SERVER_AUDIT_ERROR:${guild.id}:`, error);
+        }
       }
     });
   }

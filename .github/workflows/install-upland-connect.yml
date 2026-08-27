@@ -17,7 +17,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install Upland connection scripts
+      - name: Install Upland connection controls
         run: |
           python - <<'PY'
           from pathlib import Path
@@ -34,13 +34,19 @@ jobs:
 
           admin = Path("admin.html")
           text = admin.read_text(encoding="utf-8")
+          card = '<div id="admin-upland-account" class="auth-card" style="margin-top:24px;"><span class="eyebrow">UPLAND ACCOUNT</span><h2 style="margin-top:8px">Connect Upland Account</h2><p>Authorize your Upland account with Node Hub to enable Upland API features.</p></div>'
+          marker_card = '<div class="auth-card" style="margin-top:24px;"><span class="eyebrow">ACCOUNT</span>'
+          if 'id="admin-upland-account"' not in text:
+              if marker_card not in text:
+                  raise SystemExit("Could not find Admin ACCOUNT card marker")
+              text = text.replace(marker_card, card + marker_card, 1)
           tag = '    <script src="admin-upland.js?v=20260827-v1"></script>\n'
           if 'src="admin-upland.js' not in text:
               marker = '</body>'
               if marker not in text:
                   raise SystemExit("Could not find </body> in admin.html")
               text = text.replace(marker, tag + marker, 1)
-              admin.write_text(text, encoding="utf-8")
+          admin.write_text(text, encoding="utf-8")
           PY
 
       - name: Commit frontend update
@@ -51,7 +57,7 @@ jobs:
           if git diff --cached --quiet; then
             echo "No changes needed."
           else
-            git commit -m "Add Upland connection to admin dashboard"
+            git commit -m "Add Upland connection control to admin"
             git push
           fi
 

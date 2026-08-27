@@ -1,11 +1,11 @@
 {
   "name": "node-hub-discord-bot",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "private": true,
   "description": "Node Hub Discord setup bot and Upland webhook endpoint",
   "main": "index.js",
   "scripts": {
-    "start": "node -r ./webhook-auth.js ./sync-discord-structure.js && node index.js"
+    "start": "node -r ./webhook-auth.js ./index.js"
   },
   "dependencies": {
     "discord.js": "^14.25.1",

@@ -1,20 +1,57 @@
 // Discord structure and role assignments are frozen for New Box Games.
 // This module must never create, move, rename, delete, or permission-edit channels/roles.
-const { Client, ChannelType, GuildMemberRoleManager } = require('discord.js');
+const {
+  Client,
+  ChannelType,
+  GuildMemberRoleManager,
+  RoleManager,
+  GuildChannelManager,
+  GuildChannel,
+  Role,
+} = require('discord.js');
 const { setupUplandData } = require('./upland-data');
 
-// Hard safety guard: this bot instance cannot add or remove roles while the server is frozen.
-// This also protects against legacy listeners elsewhere in the bot code.
+function frozen(label) {
+  return async function frozenMutation() {
+    console.log(`NODE_HUB_STRUCTURE_MUTATION_BLOCKED:${label}`);
+    return this;
+  };
+}
+
+// Hard safety guard: this bot instance cannot add/remove roles or mutate the role list.
 if (!GuildMemberRoleManager.prototype.__nodeHubRolesFrozen) {
   GuildMemberRoleManager.prototype.__nodeHubRolesFrozen = true;
-  GuildMemberRoleManager.prototype.add = async function frozenRoleAdd() {
-    console.log('NODE_HUB_ROLE_MUTATION_BLOCKED:add');
-    return this;
-  };
-  GuildMemberRoleManager.prototype.remove = async function frozenRoleRemove() {
-    console.log('NODE_HUB_ROLE_MUTATION_BLOCKED:remove');
-    return this;
-  };
+  GuildMemberRoleManager.prototype.add = frozen('member-role-add');
+  GuildMemberRoleManager.prototype.remove = frozen('member-role-remove');
+  GuildMemberRoleManager.prototype.set = frozen('member-role-set');
+}
+
+if (RoleManager?.prototype && !RoleManager.prototype.__nodeHubRoleManagerFrozen) {
+  RoleManager.prototype.__nodeHubRoleManagerFrozen = true;
+  RoleManager.prototype.create = frozen('role-create');
+  RoleManager.prototype.delete = frozen('role-delete');
+  RoleManager.prototype.edit = frozen('role-edit');
+}
+
+// Hard safety guard: no channel/category creation, deletion, moving or renaming.
+if (GuildChannelManager?.prototype && !GuildChannelManager.prototype.__nodeHubChannelManagerFrozen) {
+  GuildChannelManager.prototype.__nodeHubChannelManagerFrozen = true;
+  GuildChannelManager.prototype.create = frozen('channel-create');
+  GuildChannelManager.prototype.delete = frozen('channel-delete');
+}
+
+if (GuildChannel?.prototype && !GuildChannel.prototype.__nodeHubChannelFrozen) {
+  GuildChannel.prototype.__nodeHubChannelFrozen = true;
+  GuildChannel.prototype.setName = frozen('channel-rename');
+  GuildChannel.prototype.setParent = frozen('channel-move');
+  GuildChannel.prototype.delete = frozen('channel-delete');
+}
+
+if (Role?.prototype && !Role.prototype.__nodeHubRoleFrozen) {
+  Role.prototype.__nodeHubRoleFrozen = true;
+  Role.prototype.setName = frozen('role-rename');
+  Role.prototype.edit = frozen('role-edit');
+  Role.prototype.delete = frozen('role-delete');
 }
 
 async function auditGuild(guild) {

@@ -3,7 +3,7 @@ require('./force-structure');
 
 const express = require('express');
 const { Client, GatewayIntentBits, PermissionFlagsBits } = require('discord.js');
-const { setupUplandData } = require('./upland-data-v4');
+const { setupUplandData } = require('./upland-data-v5');
 
 const TOKEN = process.env.DISCORD_TOKEN;
 const discordEnabled = Boolean(TOKEN && process.env.DISCORD_CLIENT_ID);
@@ -22,7 +22,6 @@ if (discordEnabled) {
     console.log(`Node Hub Discord Bot online as ${client.user.tag}`);
     console.log('DISCORD_STRUCTURE_LOCKED: no channel, category, role, permission, or member-role synchronization is enabled in index.js.');
   });
-
   client.on('messageCreate', async message => {
     if (!message.guild || message.author.bot) return;
     const now = Date.now();
@@ -37,7 +36,6 @@ if (discordEnabled) {
       if (!protectedMember && member?.moderatable && me?.permissions.has(PermissionFlagsBits.ModerateMembers)) await member.timeout(60000, 'Node Hub anti-spam').catch(() => {});
     }
   });
-
   client.on('error', error => console.error('DISCORD_CLIENT_ERROR:', error.message));
   client.on('warn', warning => console.warn('DISCORD_CLIENT_WARNING:', warning));
   setupUplandData(client);

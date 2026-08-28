@@ -1,41 +1,25 @@
-name: Restore Node Hub Directory Site
+name: Validate Node Hub Directory Site
 
 on:
   push:
     branches: [main]
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  restore-site:
+  validate-site:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Restore existing Node Hub site at /
+      - name: Validate Node Hub site files
         run: |
-          node <<'NODE'
-          const fs = require('fs');
-          const file = 'discord-bot/index.js';
-          let s = fs.readFileSync(file, 'utf8');
-          if (!s.includes('const LANDING_PAGE = `')) throw new Error('Expected landing page block was not found');
-          const start = s.indexOf('const LANDING_PAGE = `');
-          const route = s.indexOf("server.get('/',", start);
-          if (route === -1) throw new Error('Root route was not found');
-          const end = s.indexOf("server.get('/health'", route);
-          if (end === -1) throw new Error('Health route was not found');
-          const replacement = `server.use(require('express').static(require('path').join(__dirname, '..')));\n\nserver.get('/', (_req, res) => res.sendFile(require('path').join(__dirname, '..', 'index.html')));\n`;
-          s = s.slice(0, start) + replacement + s.slice(end);
-          fs.writeFileSync(file, s);
-          NODE
-
-      - name: Commit restored site
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add discord-bot/index.js
-          git diff --cached --quiet && exit 0
-          git commit -m "fix: restore Node Hub directory site"
-          git push
+          test -f index.html
+          test -f app.js
+          test -f user-dashboard.js
+          test -f upland-connect.js
+          grep -q 'server.get('\''/'\''' discord-bot/index.js
+          grep -q 'express.static' discord-bot/index.js
+          echo "Node Hub site structure is valid."

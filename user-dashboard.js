@@ -18,4 +18,8 @@
  window.showDashboard=showDashboard;window.removeDashboard=remove;window.updateDashboard=()=>currentUser&&showDashboard();
  window.addEventListener('hashchange',()=>{if(currentUser&&(location.hash.toLowerCase()==='#dashboard'||location.hash.toLowerCase()==='#register'))showDashboard()});
  window.addEventListener('nodehub:language-change',()=>{if(currentUser&&(location.hash.toLowerCase()==='#dashboard'||location.hash.toLowerCase()==='#register'))showDashboard()});
+ function scrollDashboardTop(){if(location.hash.toLowerCase()==='#dashboard'){requestAnimationFrame(()=>window.scrollTo({top:0,left:0,behavior:'instant'}));setTimeout(()=>window.scrollTo(0,0),80)}}
+ window.addEventListener('hashchange',scrollDashboardTop);
+ document.addEventListener('DOMContentLoaded',scrollDashboardTop);
+ if(location.hash.toLowerCase()==='#dashboard')scrollDashboardTop();
 })();

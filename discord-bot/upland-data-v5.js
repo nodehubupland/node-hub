@@ -1,7 +1,11 @@
 const { SlashCommandBuilder, REST, Routes, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 
 const APP_ID = String(process.env.UPLAND_APP_ID || '').trim();
-const SECRET_KEY = String(process.env.UPLAND_SECRET_KEY || process.env.UPLAND_APP_ACCESS_TOKEN || '').trim();
+// Upland's current production application credential. Prefer the Application Access Token.
+const APPLICATION_ACCESS_TOKEN = String(process.env.UPLAND_APP_ACCESS_TOKEN || '').trim();
+// Legacy fallback kept only for compatibility with an older Render configuration.
+const LEGACY_SECRET_KEY = String(process.env.UPLAND_SECRET_KEY || '').trim();
+const APPLICATION_CREDENTIAL = APPLICATION_ACCESS_TOKEN || LEGACY_SECRET_KEY;
 const CLIENT_ID = String(process.env.DISCORD_CLIENT_ID || '').trim();
 const DISCORD_TOKEN = String(process.env.DISCORD_TOKEN || '').trim();
 const GUILD_ID = String(process.env.DISCORD_GUILD_ID || '').trim();
@@ -11,24 +15,28 @@ function normalizeIgn(value) {
   return String(value || '').trim().replace(/^@/, '').replace(/\s+/g, '').toLowerCase();
 }
 function basicAuth() {
-  return `Basic ${Buffer.from(`${APP_ID}:${SECRET_KEY}`).toString('base64')}`;
+  return `Basic ${Buffer.from(`${APP_ID}:${APPLICATION_CREDENTIAL}`).toString('base64')}`;
 }
 async function uplandGet(path, params = {}) {
-  if (!APP_ID || !SECRET_KEY) throw new Error('UPLAND_CREDENTIALS_MISSING');
+  if (!APP_ID || !APPLICATION_CREDENTIAL) throw new Error('UPLAND_CREDENTIALS_MISSING');
   const url = new URL(`${API_BASE}${path}`);
   Object.entries(params).forEach(([k,v]) => { if (v !== undefined && v !== null && v !== '') url.searchParams.set(k, String(v)); });
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 20000);
+  const timer = setTimeout(() => controller.abort(), 15000);
   try {
     const r = await fetch(url, { headers: { Authorization: basicAuth(), Accept: 'application/json' }, signal: controller.signal });
     const text = await r.text();
     if (!r.ok) throw new Error(`UPLAND_API_${r.status}:${text.slice(0,300)}`);
     return text ? JSON.parse(text) : {};
+  } catch (e) {
+    if (e.name === 'AbortError') throw new Error('UPLAND_API_TIMEOUT');
+    throw e;
   } finally { clearTimeout(timer); }
 }
 function unwrap(body) {
-  if (Array.isArray(body?.results)) return body.results;
   if (Array.isArray(body?.results?.results)) return body.results.results;
+  if (Array.isArray(body?.results)) return body.results;
+  if (Array.isArray(body)) return body;
   return [];
 }
 function meta(body, page, size) {
@@ -40,7 +48,7 @@ async function fetchTreasureHistory(cityId = '') {
   let page = 1;
   const pageSize = 100;
   while (page <= 100) {
-    const body = await uplandGet('/treasures-history', { currentPage: page, pageSize, cityId });
+    const body = await uplandGet('/treasures-history', { currentPage: page, pageSize, ...(cityId ? { cityId } : {}) });
     const rows = unwrap(body);
     const m = meta(body, page, pageSize);
     all.push(...rows);
@@ -50,9 +58,6 @@ async function fetchTreasureHistory(cityId = '') {
   const unique = new Map();
   for (const r of all) unique.set(`${r.userName||''}|${r.lockedAt||''}|${r.spawnAt||''}|${r.reward||''}|${r.fullAddress||''}`, r);
   return [...unique.values()].sort((a,b) => new Date(b.lockedAt || b.spawnAt || 0) - new Date(a.lockedAt || a.spawnAt || 0));
-}
-function connectionButton() {
-  return new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel('Connect Upland Account').setStyle(ButtonStyle.Link).setURL('https://nodehub.world'));
 }
 function embed(rows, ign) {
   const total = rows.reduce((s,r) => s + Number(r.reward || 0), 0);
@@ -73,7 +78,7 @@ async function setupUplandData(client) {
     await interaction.deferReply();
     try {
       const rows = (await fetchTreasureHistory(cityId)).filter(r => normalizeIgn(r.userName) === ign);
-      if (!rows.length) return interaction.editReply({content:`No public Treasure Hunt history found for **${ign}**. This means the Upland API returned no matching record in the queried history.`});
+      if (!rows.length) return interaction.editReply({content:`No public Treasure Hunt history found for **${ign}**. The Upland API returned no matching record in the queried history.`});
       await interaction.editReply({embeds:[embed(rows,ign)]});
     } catch (e) {
       console.error(`TREASURE_COMMAND_ERROR:${ign}:`,e);

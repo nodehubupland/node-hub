@@ -17,16 +17,12 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
+          import re
           p = Path('index.html')
           s = p.read_text(encoding='utf-8')
-          import re
-          s, count = re.subn(r'<script src="user-dashboard\.js\?v=[^"]+"></script>', '<script src="user-dashboard.js?v=20260828-v5"></script>', s, count=1)
+          s, count = re.subn(r'<script src="user-dashboard\.js\?v=[^"]+"></script>', '<script src="user-dashboard.js?v=20260828-v9"></script>', s, count=1)
           if count == 0:
-              marker = '<script src="app.js?v=20260824-v4"></script>'
-              loader = marker + '<script src="user-dashboard.js?v=20260828-v5"></script>'
-              if marker not in s:
-                  raise SystemExit('app.js script marker not found')
-              s = s.replace(marker, loader, 1)
+              raise SystemExit('user-dashboard.js script marker not found')
           p.write_text(s, encoding='utf-8')
           PY
       - name: Commit loader change

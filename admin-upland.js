@@ -1,33 +1,11 @@
-/* Node Hub V1 - Upland connection for Admin Dashboard. */
-(function () {
-  const FUNCTION_NAME = 'upland-connect';
-  let pollTimer = null;
-  let bootTimer = null;
-
-  function esc(value) { return String(value ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#039;' }[c])); }
-  function stopPolling() { if (pollTimer) clearInterval(pollTimer); pollTimer = null; }
-  async function readConnection() {
-    if (!currentUser || !window.db) return null;
-    const { data, error } = await db.from('upland_connections').select('status,connection_code,upland_user_id,connected_at,updated_at').eq('user_id', currentUser.id).maybeSingle();
-    if (error) throw error; return data;
-  }
-  function render(box, connection) {
-    if (!connection || ['disconnected', 'failed'].includes(connection.status)) {
-      box.innerHTML = `<span class="eyebrow">UPLAND ACCOUNT</span><h2 style="margin-top:8px">Connect Upland Account</h2><p>Authorize your Upland account with Node Hub to enable Upland API features.</p><button id="admin-upland-connect" class="button button-primary" type="button">Connect Upland Account</button><p id="admin-upland-message" style="margin:14px 0 0"></p>`;
-      box.querySelector('#admin-upland-connect').addEventListener('click', startConnection); return;
-    }
-    if (connection.status === 'connected') {
-      stopPolling();
-      box.innerHTML = `<span class="eyebrow">UPLAND ACCOUNT</span><h2 style="margin-top:8px">Upland Account Connected</h2><p>Your Upland account is connected to Node Hub.</p><div style="display:grid;gap:8px;margin-top:14px"><div><small>Status</small><strong style="display:block;margin-top:4px;color:#2563eb">✓ Verified / Connected</strong></div><div><small>Upland User ID</small><strong style="display:block;margin-top:4px;word-break:break-all">${esc(connection.upland_user_id || '')}</strong></div></div>`;
-      return;
-    }
-    box.innerHTML = `<span class="eyebrow">UPLAND ACCOUNT</span><h2 style="margin-top:8px">Authorize Upland Account</h2><p>Open Upland and enter this connection code to authorize Node Hub:</p><div style="font-size:clamp(28px,6vw,44px);font-weight:800;letter-spacing:.16em;text-align:center;padding:20px;margin:18px 0;border:1px solid rgba(255,255,255,.12);border-radius:14px;background:rgba(255,255,255,.04)">${esc(connection.connection_code || '')}</div><p style="opacity:.75">Waiting for Upland to confirm the connection...</p>`;
-  }
-  async function refresh(box) { try { const connection = await readConnection(); render(box, connection); if (connection?.status === 'pending') startPolling(box); } catch (error) { console.error('Admin Upland connection status:', error); render(box, null); const msg = box.querySelector('#admin-upland-message'); if (msg) msg.textContent = error?.message || 'Unable to load the Upland connection status.'; } }
-  function startPolling(box) { stopPolling(); pollTimer = setInterval(async () => { try { const connection = await readConnection(); if (connection?.status === 'connected') render(box, connection); } catch (error) { console.warn('Admin Upland connection polling:', error); } }, 3000); }
-  async function startConnection() { const box = document.getElementById('admin-upland-account'); const button = box?.querySelector('#admin-upland-connect'); const message = box?.querySelector('#admin-upland-message'); if (!box || !currentUser) return; if (button) { button.disabled = true; button.textContent = 'Generating code...'; } if (message) message.textContent = ''; try { const { data, error } = await db.functions.invoke(FUNCTION_NAME, { body: {} }); if (error) throw error; if (!data?.code) throw new Error(data?.error || 'Upland did not return a connection code.'); render(box, { status: 'pending', connection_code: data.code }); startPolling(box); } catch (error) { console.error('Admin Upland connection:', error); if (message) message.textContent = error?.message || 'Unable to generate an Upland connection code.'; if (button) { button.disabled = false; button.textContent = 'Connect Upland Account'; } } }
-  function mount() { const box = document.getElementById('admin-upland-account'); if (!box || !currentUser) return false; if (!box.dataset.initialized) { box.dataset.initialized = '1'; refresh(box); } return true; }
-  function boot() { if (mount()) return; if (bootTimer) clearInterval(bootTimer); bootTimer = setInterval(() => { if (mount()) { clearInterval(bootTimer); bootTimer = null; } }, 500); setTimeout(() => { if (bootTimer) { clearInterval(bootTimer); bootTimer = null; } }, 15000); }
-  window.__nodehubAdminUplandMount = mount;
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+/* Node Hub V1 - Admin Upland connection flow aligned with member dashboard. */
+(function(){
+ const FUNCTION_NAME='upland-connect';let pollTimer=null;
+ const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+ async function read(){if(!window.db||!window.currentUser)return null;const{data,error}=await db.functions.invoke(FUNCTION_NAME,{body:{action:'status'}});if(error)throw error;return data?.success?{status:data.status,connection_code:data.code||null,upland_user_id:data.upland_user_id||null,connected_at:data.connected_at||null}:null}
+ function stop(){if(pollTimer)clearInterval(pollTimer);pollTimer=null}
+ function render(c){const box=document.getElementById('admin-upland-account');if(!box)return; if(c?.status==='connected'){stop();box.innerHTML='<span class="eyebrow">UPLAND ACCOUNT</span><h2 style="margin-top:8px">Upland Account</h2><p style="color:#2563eb;font-weight:700;font-size:18px;margin-top:14px">✓ Upland Account Connected</p>';return} box.innerHTML='<span class="eyebrow">UPLAND ACCOUNT</span><h2 style="margin-top:8px">Connect Upland Account</h2><p>Authorize your Upland account with Node Hub to enable Upland API features.</p><button id="admin-upland-connect" class="button button-primary" type="button">Connect Upland Account</button><p id="admin-upland-message" style="margin-top:14px"></p>';document.getElementById('admin-upland-connect').onclick=start}
+ async function refresh(){try{const c=await read();render(c);if(c?.status==='pending'){stop();pollTimer=setInterval(refresh,2000)}}catch(e){console.error('Admin Upland status:',e)}}
+ async function start(){const b=document.getElementById('admin-upland-connect'),m=document.getElementById('admin-upland-message');if(b){b.disabled=true;b.textContent='Generating code...'}try{const existing=await read();if(existing?.status==='connected'||(existing?.status==='pending'&&existing.connection_code)){render(existing);if(existing.status==='pending')pollTimer=setInterval(refresh,2000);return}const{data,error}=await db.functions.invoke(FUNCTION_NAME,{body:{action:'generate'}});if(error)throw error;if(data?.status==='connected'){render(data);return}if(!data?.code)throw new Error(data?.error||'Upland did not return a connection code.');render({status:'pending',connection_code:data.code});pollTimer=setInterval(refresh,2000)}catch(e){console.error('Admin Upland connection:',e);if(m)m.textContent=e?.message||'Unable to generate an Upland connection code.';if(b){b.disabled=false;b.textContent='Connect Upland Account'}}}
+ window.refreshAdminUplandStatus=refresh;refresh();
 })();

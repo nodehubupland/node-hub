@@ -42,11 +42,32 @@
       box.innerHTML = `<span class="eyebrow">UPLAND ACCOUNT</span><h2 style="margin-top:8px">Upland Account Connected</h2><p>Your Upland account is connected to Node Hub.</p><div style="display:grid;gap:8px;margin-top:14px"><div><small>Status</small><strong style="display:block;margin-top:4px">Connected</strong></div><div><small>Upland User ID</small><strong style="display:block;margin-top:4px;word-break:break-all">${esc(connection.upland_user_id || '')}</strong></div></div>`; return;
     }
     const code = connection.connection_code || '';
-    box.innerHTML = `<span class="eyebrow">UPLAND ACCOUNT</span><h2 style="margin-top:8px">Connect Upland Account</h2><p>Generate the code, copy it, follow the steps below in Upland, then return to Node Hub.</p><div style="display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;margin:18px 0"><div style="font-size:clamp(28px,6vw,44px);font-weight:800;letter-spacing:.16em;text-align:center;padding:18px 20px;border:1px solid rgba(255,255,255,.12);border-radius:14px;background:rgba(255,255,255,.04)">${esc(code)}</div><button id="upland-copy-code" class="button button-secondary" type="button">Copy Code</button></div><div style="margin-top:22px;padding:18px;border:1px solid rgba(255,255,255,.08);border-radius:14px;background:rgba(255,255,255,.025);text-align:left"><strong style="display:block;margin-bottom:12px">How to connect your Upland account</strong><ol style="margin:0;padding-left:22px;line-height:1.8"><li>Open <strong>Upland</strong>.</li><li>Go to <strong>Settings</strong>.</li><li>Open <strong>Third-party applications</strong>.</li><li>Enter the connection code shown above.</li><li>Confirm and authorize <strong>Node Hub</strong>.</li><li>Return to Node Hub and wait for the connection to be confirmed.</li></ol></div><p style="opacity:.75;margin-top:16px">Waiting for Upland to confirm the connection...</p>`;
+    box.innerHTML = `<span class="eyebrow">UPLAND ACCOUNT</span><h2 style="margin-top:8px">Connect Upland Account</h2><p>Generate the code, copy it, follow the steps below in Upland, then return to Node Hub.</p><div style="display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;margin:18px 0"><div style="font-size:clamp(28px,6vw,44px);font-weight:800;letter-spacing:.16em;text-align:center;padding:18px 20px;border:1px solid rgba(255,255,255,.12);border-radius:14px;background:rgba(255,255,255,.04)">${esc(code)}</div><button id="upland-copy-code" class="button button-secondary" type="button">Copy Code</button></div><div style="margin-top:22px;padding:18px;border:1px solid rgba(255,255,255,.08);border-radius:14px;background:rgba(255,255,255,.025);text-align:left"><strong style="display:block;margin-bottom:12px">How to connect your Upland account</strong><ol style="margin:0;padding-left:22px;line-height:1.8"><li>Open <strong>Upland</strong>.</li><li>Go to <strong>Settings</strong>.</li><li>Open <strong>Third-party applications</strong>.</li><li>Enter the connection code shown above.</li><li>Confirm and authorize <strong>Node Hub</strong>.</li><li>Return to Node Hub and wait for the connection to be confirmed.</li></ol></div><p id="upland-waiting-message" style="opacity:.75;margin-top:16px">Waiting for Upland to confirm the connection...</p>`;
     box.querySelector('#upland-copy-code')?.addEventListener('click', () => copyCode(code, box.querySelector('#upland-copy-code')));
   }
-  async function refresh(box) { try { const connection = await readConnection(); render(box, connection); if (connection?.status === 'pending') startPolling(box); } catch (error) { console.error('Upland connection status:', error); render(box, null); const msg = box.querySelector('#upland-connect-message'); if (msg) msg.textContent = 'Unable to load the Upland connection status right now.'; } }
-  function startPolling(box) { stopPolling(); pollTimer = setInterval(async () => { try { const connection = await readConnection(); if (connection?.status === 'connected') render(box, connection); } catch (error) { console.warn('Upland connection polling:', error); } }, 3000); }
+  async function refresh(box) {
+    try {
+      const connection = await readConnection();
+      render(box, connection);
+      if (connection?.status === 'pending') startPolling(box);
+    } catch (error) {
+      console.error('Upland connection status:', error);
+      const msg = box.querySelector('#upland-waiting-message') || box.querySelector('#upland-connect-message');
+      if (msg) msg.textContent = 'Unable to load the Upland connection status right now. Retrying...';
+      startPolling(box);
+    }
+  }
+  function startPolling(box) {
+    stopPolling();
+    pollTimer = setInterval(async () => {
+      try {
+        const connection = await readConnection();
+        if (connection?.status === 'connected' || connection?.status === 'failed' || connection?.status === 'disconnected') {
+          render(box, connection);
+        }
+      } catch (error) { console.warn('Upland connection polling:', error); }
+    }, 2000);
+  }
   async function startConnection() {
     const button = document.getElementById('upland-connect-button'); const message = document.getElementById('upland-connect-message');
     if (button) { button.disabled = true; button.textContent = 'Generating code...'; } if (message) message.textContent = '';
@@ -64,4 +85,4 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', watch); else watch();
 })();
 
-// Installer trigger marker: 2026-08-28 V1 dashboard organization + Upland copy/tutorial.
+// Installer trigger marker: 2026-08-28 V1 dashboard organization + Upland copy/tutorial/status refresh.

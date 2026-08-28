@@ -16,31 +16,43 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install patch script
+      - name: Stabilize frontend patch and install it
         run: |
           python - <<'PY'
           from pathlib import Path
 
-          path = Path("index.html")
-          text = path.read_text(encoding="utf-8")
-          tag = '    <script src="nodehub-patch.js"></script>\n'
+          patch = Path("nodehub-patch.js")
+          text = patch.read_text(encoding="utf-8")
 
-          if 'src="nodehub-patch.js"' not in text:
-              marker = '</body>'
-              if marker not in text:
-                  raise SystemExit("Could not find </body> in index.html")
-              text = text.replace(marker, tag + marker, 1)
-              path.write_text(text, encoding="utf-8")
+          marker = "    document.addEventListener('DOMContentLoaded',()=>{"
+          start = text.find(marker)
+          if start != -1:
+              replacement = '''    document.addEventListener('DOMContentLoaded',()=>{
+        const s=document.getElementById('language-selector');
+        if(s) s.addEventListener('change',()=>{ localStorage.setItem('nodehub-language',s.value); setTimeout(translateAll,50); },true);
+        setTimeout(()=>{ translateAll(); addDiscordFooter(); },300);
+        window.addEventListener('hashchange',()=>setTimeout(()=>{ translateAll(); addDiscordFooter(); },120));
+    });
+'''
+              text = text[:start] + replacement + "})();"
+              patch.write_text(text, encoding="utf-8")
+
+          path = Path("index.html")
+          html = path.read_text(encoding="utf-8")
+          tag = '    <script src="nodehub-patch.js"></script>\n'
+          if 'src="nodehub-patch.js"' not in html:
+              html = html.replace('</body>', tag + '</body>', 1)
+              path.write_text(html, encoding="utf-8")
           PY
 
       - name: Commit frontend update
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add index.html
+          git add nodehub-patch.js index.html
           if git diff --cached --quiet; then
             echo "No changes needed."
           else
-            git commit -m "Load Node Hub frontend patch"
+            git commit -m "Fix frontend translation performance"
             git push
           fi

@@ -3,37 +3,21 @@
   if (!window.__nodehubUplandLoader) {
     window.__nodehubUplandLoader = true;
     const s = document.createElement('script');
-    s.src = 'upland-connect.js?v=20260825-v3';
+    s.src = 'upland-connect.js?v=20260828-v4';
     s.async = false;
     document.head.appendChild(s);
   }
 
   const text = {
-    en: { eyebrow:'NODE HUB ACCOUNT', title:'Dashboard', intro:'Manage your Node Hub account and submit your Node for review.', account:'ACCOUNT INFORMATION', upland:'UPLAND ACCOUNT', uplandIntro:'Connect your Upland account to Node Hub to enable Upland API features.', connect:'Connect Upland Account', username:'Username', email:'Email', role:'Function', nodes:'YOUR NODES', myNodes:'My Nodes', empty:'No Nodes registered yet.', emptyHelp:'Use Register My Node to submit your first Node.', registration:'NODE REGISTRATION', register:'Register My Node', review:'Node registration will be submitted for review by the Node Hub team.', name:'Node Name', description:'Description', city:'City', country:'Country', neighborhood:'Neighborhood', neighborhoodHelp:'Enter the Neighborhood where your Node is located in Upland.', continent:'Continent', select:'Select continent', logo:'Node Logo', discord:'Discord', twitter:'X / Twitter', telegram:'Telegram', submit:'Submit Node for Review', signout:'Sign out', loading:'Loading...', success:'Node submitted for review.', error:'Unable to submit the Node. Please check the required fields and try again.' },
-    pt: { eyebrow:'CONTA NODE HUB', title:'Painel', intro:'Gerencie sua conta Node Hub e envie seu Node para análise.', account:'INFORMAÇÕES DA CONTA', upland:'CONTA UPLAND', uplandIntro:'Conecte sua conta Upland ao Node Hub para habilitar os recursos da API do Upland.', connect:'Conectar conta Upland', username:'Nome de usuário', email:'E-mail', role:'Função', nodes:'SEUS NODES', myNodes:'Meus Nodes', empty:'Nenhum Node cadastrado ainda.', emptyHelp:'Use Cadastrar meu Node para enviar seu primeiro Node.', registration:'CADASTRO DE NODE', register:'Cadastrar meu Node', review:'O cadastro será enviado para análise da equipe Node Hub.', name:'Nome do Node', description:'Descrição', city:'Cidade', country:'País', neighborhood:'Bairro', neighborhoodHelp:'Informe o bairro onde seu Node está localizado no Upland.', continent:'Continente', select:'Selecione o continente', logo:'Logo do Node', discord:'Discord', twitter:'X / Twitter', telegram:'Telegram', submit:'Enviar Node para análise', signout:'Sair', loading:'Carregando...', success:'Node enviado para análise.', error:'Não foi possível enviar o Node. Verifique os campos obrigatórios e tente novamente.' }
+    en: { eyebrow:'NODE HUB ACCOUNT', title:'Dashboard', intro:'Connect your Upland account to continue.', upland:'UPLAND ACCOUNT', registerTitle:'REGISTER YOUR NODE', register:'Register Your Node', registerIntro:'Have a Node? Register it here after connecting your Upland account.', back:'Back to Upland Account', review:'Your Node registration will be submitted for review by the Node Hub team.', name:'Node Name', description:'Description', city:'City', country:'Country', neighborhood:'Neighborhood', neighborhoodHelp:'Enter the Neighborhood where your Node is located in Upland.', continent:'Continent', select:'Select continent', logo:'Node Logo', discord:'Discord', twitter:'X / Twitter', telegram:'Telegram', submit:'Submit Node for Review', signout:'Sign out', loading:'Loading...', success:'Node submitted for review.', error:'Unable to submit the Node. Please check the required fields and try again.' },
+    pt: { eyebrow:'CONTA NODE HUB', title:'Painel', intro:'Conecte sua conta Upland para continuar.', upland:'CONTA UPLAND', registerTitle:'CADASTRE SEU NODE', register:'Cadastrar seu Node', registerIntro:'Tem um Node? Cadastre-o aqui depois de conectar sua conta Upland.', back:'Voltar para Conta Upland', review:'Seu cadastro será enviado para análise da equipe Node Hub.', name:'Nome do Node', description:'Descrição', city:'Cidade', country:'País', neighborhood:'Bairro', neighborhoodHelp:'Informe o bairro onde seu Node está localizado no Upland.', continent:'Continente', select:'Selecione o continente', logo:'Logo do Node', discord:'Discord', twitter:'X / Twitter', telegram:'Telegram', submit:'Enviar Node para análise', signout:'Sair', loading:'Carregando...', success:'Node enviado para análise.', error:'Não foi possível enviar o Node. Verifique os campos obrigatórios e tente novamente.' }
   };
   const t = () => localStorage.getItem('nodehub-language') === 'pt-BR' ? text.pt : text.en;
   const esc = v => typeof escapeHTML === 'function' ? escapeHTML(v) : String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
 
-  async function loadMine() {
-    const box = document.getElementById('user-dashboard-nodes');
-    if (!box || !currentUser) return;
-    const l = t();
-    box.textContent = l.loading;
-    try {
-      const { data, error } = await db.from('nodes').select('id,name,city,country,upland_location,status,created_at').eq('user_id', currentUser.id).order('created_at', { ascending:false });
-      if (error) throw error;
-      if (!data?.length) { box.innerHTML = `<p>${l.empty}</p><p style="opacity:.7">${l.emptyHelp}</p>`; return; }
-      box.innerHTML = data.map(n => {
-        const s = n.status || 'pending';
-        const label = s === 'approved' ? 'Approved' : s === 'rejected' ? 'Rejected' : 'Pending review';
-        return `<div style="padding:14px 0;border-bottom:1px solid rgba(255,255,255,.08)"><strong>${esc(n.name || 'Node')}</strong><div style="opacity:.72;margin-top:4px">${esc(n.city || '')}${n.country ? ', ' + esc(n.country) : ''}${n.upland_location ? ' · ' + esc(n.upland_location) : ''}</div><small style="display:inline-block;margin-top:8px;padding:5px 9px;border-radius:999px;background:rgba(255,255,255,.07)">${label}</small></div>`;
-      }).join('');
-    } catch (e) { console.error('User dashboard nodes:', e); box.textContent = l.error; }
-  }
-
   async function submitNode(e) {
     e.preventDefault();
+    if (!currentUser) { location.hash = 'login'; return; }
     const form = e.currentTarget, button = form.querySelector('button[type=submit]'), msg = document.getElementById('user-dashboard-message'), l = t();
     const name = document.getElementById('user-node-name').value.trim();
     const description = document.getElementById('user-node-description').value.trim();
@@ -58,9 +42,16 @@
       }
       const { error } = await db.from('nodes').insert({ user_id:currentUser.id, name, description, city, country, upland_location:neighborhood, continent, logo_url, discord_url:discord, twitter_url:twitter, telegram_url:telegram, status:'pending' });
       if (error) throw error;
-      msg.textContent = l.success; form.reset(); await loadMine();
+      msg.textContent = l.success; form.reset();
     } catch (err) { console.error('Node submission:', err); msg.textContent = err?.message || l.error; }
     finally { button.disabled = false; button.textContent = l.submit; }
+  }
+
+  function renderRegisterPage(section) {
+    const l = t();
+    section.innerHTML = `<div class="container" style="max-width:980px;margin:0 auto"><div class="section-heading"><span class="eyebrow">${l.registerTitle}</span><h1>${l.register}</h1><p>${l.review}</p></div><div class="auth-card" style="max-width:900px;margin:0 auto"><form id="user-node-form" style="display:grid;gap:14px;margin-top:4px"><label>${l.name}<input id="user-node-name" required></label><label>${l.description}<textarea id="user-node-description" rows="7" style="min-height:170px;resize:vertical"></textarea></label><label>${l.city}<input id="user-node-city" required></label><label>${l.country}<input id="user-node-country" required></label><label>${l.neighborhood}<input id="user-node-neighborhood" required><small style="display:block;margin-top:5px;opacity:.7">${l.neighborhoodHelp}</small></label><label>${l.continent}<select id="user-node-continent" required><option value="">${l.select}</option><option>North America</option><option>South America</option><option>Europe</option><option>Asia</option><option>Africa</option><option>Oceania</option></select></label><label>${l.logo}<input id="user-node-logo" type="file" accept="image/png,image/jpeg,image/webp"></label><label>${l.discord}<input id="user-node-discord" type="url"></label><label>${l.twitter}<input id="user-node-twitter" type="url"></label><label>${l.telegram}<input id="user-node-telegram" type="url"></label><div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px"><button class="button button-primary" type="submit">${l.submit}</button><a class="button button-secondary" href="#dashboard">${l.back}</a><button class="button button-secondary" type="button" id="user-dashboard-signout">${l.signout}</button></div><p id="user-dashboard-message" style="margin:0"></p></form></div></div>`;
+    section.querySelector('#user-node-form').addEventListener('submit', submitNode);
+    section.querySelector('#user-dashboard-signout').addEventListener('click', () => signOut());
   }
 
   async function showDashboard() {
@@ -69,16 +60,16 @@
     document.getElementById('nodehub-user-dashboard')?.remove();
     const l = t(), section = document.createElement('section');
     section.id = 'nodehub-user-dashboard'; section.className = 'section section-alt';
-    section.innerHTML = `<div class="container" style="max-width:1100px;margin:0 auto"><div class="section-heading"><span class="eyebrow">${l.eyebrow}</span><h1>${l.title}</h1><p>${l.intro}</p></div><div class="auth-card" style="margin-bottom:24px"><span class="eyebrow">${l.account}</span><div id="user-account-info" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-top:18px"></div></div><div id="upland-account-card" class="auth-card" style="margin-bottom:24px"><span class="eyebrow">${l.upland}</span><h2 style="margin-top:8px">${l.connect}</h2><p>${l.uplandIntro}</p><p style="opacity:.7">Loading Upland connection...</p></div><div class="auth-card" style="margin-bottom:24px"><span class="eyebrow">${l.nodes}</span><h2>${l.myNodes}</h2><div id="user-dashboard-nodes" style="margin-top:18px">${l.loading}</div></div><div class="auth-card"><span class="eyebrow">${l.registration}</span><h2>${l.register}</h2><p>${l.review}</p><form id="user-node-form" style="display:grid;gap:12px;margin-top:20px"><label>${l.name}<input id="user-node-name" required></label><label>${l.description}<textarea id="user-node-description" rows="4"></textarea></label><label>${l.city}<input id="user-node-city" required></label><label>${l.country}<input id="user-node-country" required></label><label>${l.neighborhood}<input id="user-node-neighborhood" required><small style="display:block;margin-top:5px;opacity:.7">${l.neighborhoodHelp}</small></label><label>${l.continent}<select id="user-node-continent" required><option value="">${l.select}</option><option>North America</option><option>South America</option><option>Europe</option><option>Asia</option><option>Africa</option><option>Oceania</option></select></label><label>${l.logo}<input id="user-node-logo" type="file" accept="image/png,image/jpeg,image/webp"></label><label>${l.discord}<input id="user-node-discord" type="url"></label><label>${l.twitter}<input id="user-node-twitter" type="url"></label><label>${l.telegram}<input id="user-node-telegram" type="url"></label><div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px"><button class="button button-primary" type="submit">${l.submit}</button><button class="button button-secondary" type="button" id="user-dashboard-signout">${l.signout}</button></div><p id="user-dashboard-message" style="margin:0"></p></form></div></div>`;
     document.body.appendChild(section);
-    try {
-      const { data:profile } = await db.from('profiles').select('username,email,role').eq('id', currentUser.id).maybeSingle();
-      const info = document.getElementById('user-account-info');
-      if (info) info.innerHTML = `<div><small>${l.username}</small><strong style="display:block;margin-top:6px">${esc(profile?.username || currentUser.email?.split('@')[0] || 'User')}</strong></div><div><small>${l.email}</small><strong style="display:block;margin-top:6px;word-break:break-word">${esc(currentUser.email || '')}</strong></div><div><small>${l.role}</small><strong style="display:block;margin-top:6px;text-transform:capitalize">${esc(profile?.role || 'user')}</strong></div>`;
-    } catch {}
-    document.getElementById('user-node-form').addEventListener('submit', submitNode);
-    document.getElementById('user-dashboard-signout').addEventListener('click', () => signOut());
-    await loadMine();
+
+    if (location.hash.toLowerCase() === '#register') {
+      renderRegisterPage(section);
+      section.scrollIntoView({ behavior:'smooth', block:'start' });
+      return;
+    }
+
+    section.innerHTML = `<div class="container" style="max-width:980px;margin:0 auto"><div class="section-heading"><span class="eyebrow">${l.eyebrow}</span><h1>${l.title}</h1><p>${l.intro}</p></div><div id="upland-account-card" class="auth-card" style="max-width:900px;margin:0 auto 24px"><span class="eyebrow">${l.upland}</span><h2 style="margin-top:8px">Connect Upland Account</h2><p>Loading Upland connection...</p></div><div class="auth-card" style="max-width:900px;margin:0 auto"><span class="eyebrow">${l.registerTitle}</span><h2 style="margin-top:8px">${l.register}</h2><p>${l.registerIntro}</p><a class="button button-primary" href="#register" style="margin-top:8px">${l.register}</a></div></div>`;
+
     if (typeof window.__nodehubUplandMount === 'function') window.__nodehubUplandMount();
     section.scrollIntoView({ behavior:'smooth', block:'start' });
   }
@@ -87,4 +78,9 @@
   window.showDashboard = showDashboard;
   window.removeDashboard = removeDashboard;
   window.updateDashboard = () => { if (currentUser) showDashboard(); };
+
+  window.addEventListener('hashchange', () => {
+    const hash = location.hash.toLowerCase();
+    if ((hash === '#dashboard' || hash === '#register') && currentUser) showDashboard();
+  });
 })();

@@ -3,7 +3,7 @@
   if (!window.__nodehubUplandLoader) {
     window.__nodehubUplandLoader = true;
     const s = document.createElement('script');
-    s.src = 'upland-connect.js?v=20260828-v4';
+    s.src = 'upland-connect.js?v=20260828-v5';
     s.async = false;
     document.head.appendChild(s);
   }
@@ -13,7 +13,7 @@
     pt: { eyebrow:'CONTA NODE HUB', title:'Painel', intro:'Conecte sua conta Upland para continuar.', upland:'CONTA UPLAND', registerTitle:'CADASTRE SEU NODE', register:'Cadastrar seu Node', registerIntro:'Tem um Node? Cadastre-o aqui depois de conectar sua conta Upland.', back:'Voltar para Conta Upland', review:'Seu cadastro será enviado para análise da equipe Node Hub.', name:'Nome do Node', description:'Descrição', city:'Cidade', country:'País', neighborhood:'Bairro', neighborhoodHelp:'Informe o bairro onde seu Node está localizado no Upland.', continent:'Continente', select:'Selecione o continente', logo:'Logo do Node', discord:'Discord', twitter:'X / Twitter', telegram:'Telegram', submit:'Enviar Node para análise', signout:'Sair', loading:'Carregando...', success:'Node enviado para análise.', error:'Não foi possível enviar o Node. Verifique os campos obrigatórios e tente novamente.' }
   };
   const t = () => localStorage.getItem('nodehub-language') === 'pt-BR' ? text.pt : text.en;
-  const esc = v => typeof escapeHTML === 'function' ? escapeHTML(v) : String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+  const esc = v => typeof escapeHTML === 'function' ? escapeHTML(v) : String(v ?? '').replace(/[&<>\"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#039;'}[c]));
 
   async function submitNode(e) {
     e.preventDefault();
@@ -40,8 +40,13 @@
         if (upload.error) throw upload.error;
         logo_url = db.storage.from('node-images').getPublicUrl(path).data.publicUrl;
       }
-      const { error } = await db.from('nodes').insert({ user_id:currentUser.id, name, description, city, country, upland_location:neighborhood, continent, logo_url, discord_url:discord, twitter_url:twitter, telegram_url:telegram, status:'pending' });
+      const { data: insertedNode, error } = await db.from('nodes').insert({ user_id:currentUser.id, name, description, city, country, upland_location:neighborhood, continent, logo_url, discord_url:discord, twitter_url:twitter, telegram_url:telegram, status:'pending' }).select('id').single();
       if (error) throw error;
+      try {
+        await db.functions.invoke('node-registration-notify', { body: { node_id: insertedNode.id } });
+      } catch (notifyError) {
+        console.warn('Node registration notification failed:', notifyError);
+      }
       msg.textContent = l.success; form.reset();
     } catch (err) { console.error('Node submission:', err); msg.textContent = err?.message || l.error; }
     finally { button.disabled = false; button.textContent = l.submit; }
@@ -49,7 +54,7 @@
 
   function renderRegisterPage(section) {
     const l = t();
-    section.innerHTML = `<div class="container" style="max-width:980px;margin:0 auto"><div class="section-heading"><span class="eyebrow">${l.registerTitle}</span><h1>${l.register}</h1><p>${l.review}</p></div><div class="auth-card" style="max-width:900px;margin:0 auto"><form id="user-node-form" style="display:grid;gap:14px;margin-top:4px"><label>${l.name}<input id="user-node-name" required></label><label>${l.description}<textarea id="user-node-description" rows="7" style="min-height:170px;resize:vertical"></textarea></label><label>${l.city}<input id="user-node-city" required></label><label>${l.country}<input id="user-node-country" required></label><label>${l.neighborhood}<input id="user-node-neighborhood" required><small style="display:block;margin-top:5px;opacity:.7">${l.neighborhoodHelp}</small></label><label>${l.continent}<select id="user-node-continent" required><option value="">${l.select}</option><option>North America</option><option>South America</option><option>Europe</option><option>Asia</option><option>Africa</option><option>Oceania</option></select></label><label>${l.logo}<input id="user-node-logo" type="file" accept="image/png,image/jpeg,image/webp"></label><label>${l.discord}<input id="user-node-discord" type="url"></label><label>${l.twitter}<input id="user-node-twitter" type="url"></label><label>${l.telegram}<input id="user-node-telegram" type="url"></label><div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px"><button class="button button-primary" type="submit">${l.submit}</button><a class="button button-secondary" href="#dashboard">${l.back}</a><button class="button button-secondary" type="button" id="user-dashboard-signout">${l.signout}</button></div><p id="user-dashboard-message" style="margin:0"></p></form></div></div>`;
+    section.innerHTML = `<div class="container" style="max-width:980px;margin:0 auto"><div class="section-heading"><span class="eyebrow">${l.registerTitle}</span><h1>${l.register}</h1><p>${l.review}</p></div><div class="auth-card" style="max-width:900px;margin:0 auto"><form id="user-node-form" style="display:grid;gap:14px;margin-top:4px"><label>${l.name}<input id="user-node-name" required style="width:100%;box-sizing:border-box"></label><label>${l.description}<textarea id="user-node-description" rows="7" style="width:100%;box-sizing:border-box;min-height:185px;height:185px;resize:vertical"></textarea></label><label>${l.city}<input id="user-node-city" required style="width:100%;box-sizing:border-box"></label><label>${l.country}<input id="user-node-country" required style="width:100%;box-sizing:border-box"></label><label>${l.neighborhood}<input id="user-node-neighborhood" required style="width:100%;box-sizing:border-box"><small style="display:block;margin-top:5px;opacity:.7">${l.neighborhoodHelp}</small></label><label>${l.continent}<select id="user-node-continent" required style="width:100%;box-sizing:border-box"><option value="">${l.select}</option><option>North America</option><option>South America</option><option>Europe</option><option>Asia</option><option>Africa</option><option>Oceania</option></select></label><label>${l.logo}<input id="user-node-logo" type="file" accept="image/png,image/jpeg,image/webp" style="width:100%;box-sizing:border-box"></label><label>${l.discord}<input id="user-node-discord" type="url" style="width:100%;box-sizing:border-box"></label><label>${l.twitter}<input id="user-node-twitter" type="url" style="width:100%;box-sizing:border-box"></label><label>${l.telegram}<input id="user-node-telegram" type="url" style="width:100%;box-sizing:border-box"></label><div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px"><button class="button button-primary" type="submit">${l.submit}</button><a class="button button-secondary" href="#dashboard">${l.back}</a><button class="button button-secondary" type="button" id="user-dashboard-signout">${l.signout}</button></div><p id="user-dashboard-message" style="margin:0"></p></form></div></div>`;
     section.querySelector('#user-node-form').addEventListener('submit', submitNode);
     section.querySelector('#user-dashboard-signout').addEventListener('click', () => signOut());
   }

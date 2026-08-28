@@ -50,8 +50,8 @@ function historyEmbed(ign, data) {
   const rows = Array.isArray(data.results) ? data.results : [];
   const embed = new EmbedBuilder().setTitle(`Treasure Hunt • ${ign}`).setDescription(`Found **${rows.length}** public Treasure Hunt record${rows.length === 1 ? '' : 's'}.`);
   if (!rows.length) {
-    embed.addFields({ name: 'Result', value: 'No public Treasure Hunt history found for this player.' });
-    if (data.partial) embed.setFooter({ text: `Search limited to the most recent ${data.pages_limit ? data.pages_limit * 10 : 300} records.` });
+    embed.addFields({ name: 'Result', value: data.partial ? `No record found in the first ${data.search_limit?.toLocaleString?.() || data.search_limit || 10000} public Treasure records returned by the Upland API.` : 'No public Treasure Hunt history found for this player.' });
+    if (data.partial) embed.setFooter({ text: `Search reached the configured limit. Upland reported ${data.total_results || 'more'} total records.` });
     return embed;
   }
   const lines = rows.slice(0, 10).map((r, i) => {
@@ -62,7 +62,7 @@ function historyEmbed(ign, data) {
     return `**${i + 1}.** ${date}\n${type} • ${reward}\n${address}`;
   });
   embed.addFields({ name: 'History', value: lines.join('\n\n').slice(0, 1024) });
-  if (data.partial) embed.setFooter({ text: `Search limited to the most recent ${data.pages_limit * 10} records.` });
+  if (data.partial) embed.setFooter({ text: `Search reached the configured limit of ${data.search_limit || 10000} records.` });
   return embed;
 }
 function errorMessage(error, ign) {
@@ -78,9 +78,7 @@ async function setupUplandData(client) {
     await interaction.deferReply();
     try {
       const data = await fetchTreasure(ign);
-      if (data.connected === false || data.error === 'PLAYER_NOT_CONNECTED') {
-        return interaction.editReply(errorMessage(Object.assign(new Error('PLAYER_NOT_CONNECTED'), { status: 404 }), ign));
-      }
+      if (data.connected === false || data.error === 'PLAYER_NOT_CONNECTED') return interaction.editReply(errorMessage(Object.assign(new Error('PLAYER_NOT_CONNECTED'), { status: 404 }), ign));
       return interaction.editReply({ embeds: [historyEmbed(ign, data)] });
     } catch (error) {
       console.error(`TREASURE_COMMAND_ERROR:${ign}:`, error);

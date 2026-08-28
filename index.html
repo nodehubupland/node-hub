@@ -30,4 +30,5 @@ function translate(lang){document.querySelectorAll("[data-i18n]").forEach(el=>{c
 if(localStorage.getItem("nodehub-language-version")!==version){localStorage.removeItem(key);localStorage.setItem("nodehub-language-version",version);}const s=document.getElementById("language-selector");const saved=localStorage.getItem(key)||"en-US";s.value=saved;s.addEventListener("change",()=>translate(s.value));if(saved==="pt-BR")window.addEventListener("DOMContentLoaded",()=>translate("pt-BR"),{once:true});else translate("en-US");
 })();
 </script>
+    <script src="upland-connect.js?v=20260827-v4"></script>
 </body></html>

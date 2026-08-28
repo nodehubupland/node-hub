@@ -5,114 +5,107 @@ const APP_ACCESS_TOKEN = String(process.env.UPLAND_APP_ACCESS_TOKEN || '').trim(
 const CLIENT_ID = String(process.env.DISCORD_CLIENT_ID || '').trim();
 const DISCORD_TOKEN = String(process.env.DISCORD_TOKEN || '').trim();
 const GUILD_ID = String(process.env.DISCORD_GUILD_ID || '').trim();
-const TREASURE_SERVICE = String(process.env.SUPABASE_URL || 'https://ynqtzyzxspoxssjrjeve.supabase.co').trim() + '/functions/v1/upland-treasure';
-const NODE_HUB_URL = 'https://nodehubupland.github.io/node-hub/#dashboard';
+const TREASURE_URL = String(process.env.UPLAND_TREASURE_FUNCTION_URL || 'https://ynqtzyzxspoxssjrjeve.supabase.co/functions/v1/upland-treasure').trim();
+const NODE_HUB_KEY = String(process.env.UPLAND_TREASURE_KEY || APP_ACCESS_TOKEN).trim();
 
-function normalizeIgn(value) {
-  return String(value || '').trim().replace(/^@/, '').replace(/\s+/g, '').toLowerCase();
+function buildCommands() {
+  return [new SlashCommandBuilder()
+    .setName('treasure')
+    .setDescription('Show public Upland Treasure Hunt history for a player')
+    .addStringOption(o => o.setName('ign').setDescription('Upland IGN').setRequired(true))
+    .toJSON()];
 }
 
-async function fetchTreasureForPlayer(ign) {
-  const normalized = normalizeIgn(ign);
-  const url = new URL(TREASURE_SERVICE);
-  url.searchParams.set('ign', normalized);
-  const headers = { Accept: 'application/json' };
-  if (APP_ACCESS_TOKEN) headers['x-node-hub-key'] = APP_ACCESS_TOKEN;
-  const response = await fetch(url, { headers, signal: AbortSignal.timeout(20000) });
-  const text = await response.text();
-  let body = null;
-  try { body = text ? JSON.parse(text) : null; } catch {}
-  if (!response.ok) throw new Error(body?.error || `UPLAND_TREASURE_HTTP_${response.status}`);
-  if (body?.error) throw new Error(body.error);
-  return Array.isArray(body?.results) ? body.results : [];
-}
-
-function reward(value) {
-  return `${Number(value || 0).toLocaleString('en-US')} UPX`;
-}
-
-function dateOf(row) {
-  return new Date(row.lockedAt || row.spawnAt || 0);
-}
-
-function resultEmbed(rows, ign) {
-  const sorted = rows.slice().sort((a, b) => dateOf(b) - dateOf(a));
-  const total = sorted.reduce((sum, row) => sum + Number(row.reward || 0), 0);
-  const lines = sorted.slice(0, 10).map((row, i) => `${i + 1}. ${reward(row.reward)} | ${row.treasureType || 'treasure'} | ${row.fullAddress || 'Unknown location'} | ${row.lockedAt ? new Date(row.lockedAt).toLocaleString('en-US') : 'Unknown date'}`);
-  return new EmbedBuilder()
-    .setTitle('TREASURE HUNT RESULT')
-    .setDescription([
-      `**Player:** ${sorted[0]?.userName || ign}`,
-      `**Treasures found:** ${sorted.length}`,
-      `**Total rewards:** ${reward(total)}`,
-      '',
-      '**History**',
-      ...lines,
-    ].join('\n'))
-    .setFooter({ text: 'Node Hub · Upland' })
-    .setTimestamp();
-}
-
-function connectPrompt(ign) {
-  return {
-    content: `**${ign}** is not connected to Node Hub yet. Connect the Upland account on Node Hub, authorize the application, then run **/treasure ${ign}** again.`,
-    components: [new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel('Connect Upland Account').setStyle(ButtonStyle.Link).setURL(NODE_HUB_URL))],
-  };
-}
-
-async function registerCommands() {
-  if (!CLIENT_ID || !DISCORD_TOKEN || !GUILD_ID) return;
+async function register() {
+  if (!CLIENT_ID || !DISCORD_TOKEN) return;
   const rest = new REST({ version: '10' }).setToken(DISCORD_TOKEN);
-  const commands = [
-    new SlashCommandBuilder().setName('node-status').setDescription('Show Node Hub bot status.'),
-    new SlashCommandBuilder().setName('treasure').setDescription('Show an Upland player Treasure Hunt history.').addStringOption(o => o.setName('igname').setDescription('Upland IG Name.').setRequired(true)),
-    new SlashCommandBuilder().setName('player-stats').setDescription('Show Upland Treasure Hunt statistics.').addStringOption(o => o.setName('igname').setDescription('Upland IG Name.').setRequired(true)),
-  ].map(c => c.toJSON());
-  await rest.put(Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID), { body: commands });
+  await rest.put(Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID), { body: buildCommands() });
 }
 
-function setupUplandData(client) {
-  client.once('ready', async () => {
-    console.log(`UPLAND_V5_READY: appId=${Boolean(APP_ID)} accessToken=${Boolean(APP_ACCESS_TOKEN)} treasureService=${TREASURE_SERVICE}`);
-    try { await registerCommands(); } catch (error) { console.error(`UPLAND_COMMAND_REGISTER_ERROR:${error.message}`); }
-  });
+function connectionButton() {
+  return new ActionRowBuilder().addComponents(
+    new ButtonBuilder().setLabel('Connect Upland Account').setStyle(ButtonStyle.Link).setURL('https://nodehubupland.github.io/node-hub/#dashboard')
+  );
+}
 
-  client.on('interactionCreate', async interaction => {
-    if (!interaction.isChatInputCommand()) return;
-    if (interaction.commandName === 'node-status') {
-      await interaction.reply({ content: `Node Hub Status\nDiscord: Online\nUpland API: ${APP_ID && APP_ACCESS_TOKEN ? 'Configured' : 'Not configured'}\nTreasure service: Active\nLatency: ${client.ws.ping}ms` });
-      return;
+async function fetchTreasure(ign) {
+  const url = new URL(TREASURE_URL);
+  url.searchParams.set('ign', ign);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 12000);
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: { Accept: 'application/json', 'x-node-hub-key': NODE_HUB_KEY },
+      signal: controller.signal
+    });
+    const text = await response.text();
+    let body = null;
+    try { body = text ? JSON.parse(text) : null; } catch {}
+    if (!response.ok) {
+      const error = new Error(body?.error || `UPLAND_TREASURE_HTTP_${response.status}`);
+      error.status = response.status;
+      throw error;
     }
-    if (!['treasure', 'player-stats'].includes(interaction.commandName)) return;
-    const ign = interaction.options.getString('igname', true);
+    return body || {};
+  } catch (error) {
+    if (error?.name === 'AbortError') {
+      const timeout = new Error('TREASURE_TIMEOUT');
+      timeout.code = 'TREASURE_TIMEOUT';
+      throw timeout;
+    }
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function historyEmbed(ign, data) {
+  const rows = Array.isArray(data.results) ? data.results : [];
+  const embed = new EmbedBuilder()
+    .setTitle(`Treasure Hunt • ${ign}`)
+    .setDescription(`Found **${rows.length}** public Treasure Hunt record${rows.length === 1 ? '' : 's'}.`);
+  if (!rows.length) {
+    embed.addFields({ name: 'Result', value: 'No public Treasure Hunt history found for this player.' });
+    return embed;
+  }
+  const lines = rows.slice(0, 10).map((r, i) => {
+    const date = r.createdAt || r.created_at || r.date || r.timestamp || 'Date unavailable';
+    const city = r.cityName || r.city || r.city_name || 'Unknown city';
+    return `**${i + 1}.** ${date} • ${city}`;
+  });
+  embed.addFields({ name: 'History', value: lines.join('\n').slice(0, 1024) });
+  if (data.partial) embed.setFooter({ text: 'Some Upland pages could not be retrieved.' });
+  return embed;
+}
+
+function errorMessage(error, ign) {
+  if (error?.status === 404 && error?.message === 'PLAYER_NOT_CONNECTED') {
+    return { content: `**${ign}** is not connected to Node Hub yet. Connect the Upland account on Node Hub, authorize the application, then run **/treasure ${ign}** again.`, components: [connectionButton()] };
+  }
+  if (error?.code === 'TREASURE_TIMEOUT') {
+    return { content: `The Upland Treasure service took too long to respond for **${ign}**. Please try **/treasure ${ign}** again in a moment.` };
+  }
+  return { content: `Unable to retrieve Upland data: ${error?.message || 'Unknown error'}` };
+}
+
+async function setup(client) {
+  await register().catch(error => console.error('UPLAND_COMMAND_REGISTER_ERROR:', error));
+  client.on('interactionCreate', async interaction => {
+    if (!interaction.isChatInputCommand() || interaction.commandName !== 'treasure') return;
+    const ign = interaction.options.getString('ign', true).trim().replace(/^@/, '');
     await interaction.deferReply();
     try {
-      const rows = await fetchTreasureForPlayer(ign);
-      if (!rows.length) {
-        await interaction.editReply(connectPrompt(ign));
-        return;
+      const data = await fetchTreasure(ign);
+      if (data.connected === false || data.error === 'PLAYER_NOT_CONNECTED') {
+        return interaction.editReply(errorMessage(Object.assign(new Error('PLAYER_NOT_CONNECTED'), { status: 404 }), ign));
       }
-      if (interaction.commandName === 'treasure') {
-        await interaction.editReply({ embeds: [resultEmbed(rows, ign)] });
-        return;
-      }
-      const total = rows.reduce((sum, row) => sum + Number(row.reward || 0), 0);
-      const best = rows.reduce((max, row) => Math.max(max, Number(row.reward || 0)), 0);
-      await interaction.editReply({
-        embeds: [new EmbedBuilder().setTitle('PLAYER STATS').setDescription([
-          `**Player:** ${rows[0].userName || ign}`,
-          `**Treasures found:** ${rows.length}`,
-          `**Total rewards:** ${reward(total)}`,
-          `**Average reward:** ${reward(total / rows.length)}`,
-          `**Best reward:** ${reward(best)}`,
-        ].join('\n')).setTimestamp()],
-      });
+      return interaction.editReply({ embeds: [historyEmbed(ign, data)] });
     } catch (error) {
-      console.error(`UPLAND_${interaction.commandName.toUpperCase()}_ERROR:${error.message}`);
-      if (error.message === 'PLAYER_NOT_CONNECTED') await interaction.editReply(connectPrompt(ign));
-      else await interaction.editReply(`Unable to retrieve Upland data: ${error.message}`);
+      console.error(`TREASURE_COMMAND_ERROR:${ign}:`, error);
+      return interaction.editReply(errorMessage(error, ign));
     }
   });
 }
 
-module.exports = { setupUplandData, fetchTreasureForPlayer };
+module.exports = { setup };

@@ -18,3 +18,28 @@
  function watch(){mount();if(observer)observer.disconnect();observer=new MutationObserver(mount);observer.observe(document.body,{childList:true,subtree:true});window.addEventListener('hashchange',mount);window.addEventListener('nodehub:language-change',refreshLanguage)}
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',watch);else watch();
 })();
+
+/* Restore the centralized Portuguese language layer and correct post-login routing. */
+(function(){
+  function loadLanguagePatch(){
+    if(window.__NODEHUB_V1_PATCH__)return;
+    if(document.querySelector('script[data-nodehub-language-patch]'))return;
+    const s=document.createElement('script');
+    s.src='nodehub-patch.js?v=20260828-language1';
+    s.dataset.nodehubLanguagePatch='1';
+    document.head.appendChild(s);
+  }
+  function goToDashboardAfterLogin(){
+    if(!window.currentUser)return;
+    const h=location.hash.toLowerCase();
+    if(h==='#login'||h===''){
+      location.hash='dashboard';
+      requestAnimationFrame(()=>window.scrollTo({top:0,left:0,behavior:'instant'}));
+      setTimeout(()=>window.scrollTo(0,0),100);
+    }
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',loadLanguagePatch);else loadLanguagePatch();
+  window.addEventListener('hashchange',()=>{setTimeout(goToDashboardAfterLogin,0)});
+  document.addEventListener('DOMContentLoaded',()=>setTimeout(goToDashboardAfterLogin,150));
+  if(window.db?.auth)window.db.auth.onAuthStateChange((event)=>{if(event==='SIGNED_IN')setTimeout(goToDashboardAfterLogin,50)});
+})();

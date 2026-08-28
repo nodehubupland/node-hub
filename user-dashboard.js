@@ -3,17 +3,16 @@
   if (!window.__nodehubUplandLoader) {
     window.__nodehubUplandLoader = true;
     const s = document.createElement('script');
-    s.src = 'upland-connect.js?v=20260828-v5';
+    s.src = 'upland-connect.js?v=20260828-v6';
     s.async = false;
     document.head.appendChild(s);
   }
 
   const text = {
-    en: { eyebrow:'NODE HUB ACCOUNT', title:'Dashboard', intro:'Connect your Upland account to continue.', upland:'UPLAND ACCOUNT', registerTitle:'REGISTER YOUR NODE', register:'Register Your Node', registerIntro:'Have a Node? Register it here after connecting your Upland account.', back:'Back to Upland Account', review:'Your Node registration will be submitted for review by the Node Hub team.', name:'Node Name', description:'Description', city:'City', country:'Country', neighborhood:'Neighborhood', neighborhoodHelp:'Enter the Neighborhood where your Node is located in Upland.', continent:'Continent', select:'Select continent', logo:'Node Logo', discord:'Discord', twitter:'X / Twitter', telegram:'Telegram', submit:'Submit Node for Review', signout:'Sign out', loading:'Loading...', success:'Node submitted for review.', error:'Unable to submit the Node. Please check the required fields and try again.' },
-    pt: { eyebrow:'CONTA NODE HUB', title:'Painel', intro:'Conecte sua conta Upland para continuar.', upland:'CONTA UPLAND', registerTitle:'CADASTRE SEU NODE', register:'Cadastrar seu Node', registerIntro:'Tem um Node? Cadastre-o aqui depois de conectar sua conta Upland.', back:'Voltar para Conta Upland', review:'Seu cadastro será enviado para análise da equipe Node Hub.', name:'Nome do Node', description:'Descrição', city:'Cidade', country:'País', neighborhood:'Bairro', neighborhoodHelp:'Informe o bairro onde seu Node está localizado no Upland.', continent:'Continente', select:'Selecione o continente', logo:'Logo do Node', discord:'Discord', twitter:'X / Twitter', telegram:'Telegram', submit:'Enviar Node para análise', signout:'Sair', loading:'Carregando...', success:'Node enviado para análise.', error:'Não foi possível enviar o Node. Verifique os campos obrigatórios e tente novamente.' }
+    en: { eyebrow:'NODE HUB ACCOUNT', title:'Dashboard', intro:'Connect your Upland account to continue.', upland:'UPLAND ACCOUNT', registerTitle:'REGISTER YOUR NODE', register:'Register Your Node', registerIntro:'Have a Node? Register it here after connecting your Upland account.', back:'Back to Upland Account', backHome:'Back to Home', review:'Your Node registration will be submitted for review by the Node Hub team.', name:'Node Name', description:'Description', city:'City', country:'Country', neighborhood:'Neighborhood', neighborhoodHelp:'Enter the Neighborhood where your Node is located in Upland.', continent:'Continent', select:'Select continent', logo:'Node Logo', discord:'Discord', twitter:'X / Twitter', telegram:'Telegram', submit:'Submit Node for Review', signout:'Sign out', loading:'Loading...', success:'Node submitted for review.', error:'Unable to submit the Node. Please check the required fields and try again.' },
+    pt: { eyebrow:'CONTA NODE HUB', title:'Painel', intro:'Conecte sua conta Upland para continuar.', upland:'CONTA UPLAND', registerTitle:'CADASTRE SEU NODE', register:'Cadastrar seu Node', registerIntro:'Tem um Node? Cadastre-o aqui depois de conectar sua conta Upland.', back:'Voltar para Conta Upland', backHome:'Voltar para Home', review:'Seu cadastro será enviado para análise da equipe Node Hub.', name:'Nome do Node', description:'Descrição', city:'Cidade', country:'País', neighborhood:'Bairro', neighborhoodHelp:'Informe o bairro onde seu Node está localizado no Upland.', continent:'Continente', select:'Selecione o continente', logo:'Logo do Node', discord:'Discord', twitter:'X / Twitter', telegram:'Telegram', submit:'Enviar Node para análise', signout:'Sair', loading:'Carregando...', success:'Node enviado para análise.', error:'Não foi possível enviar o Node. Verifique os campos obrigatórios e tente novamente.' }
   };
   const t = () => localStorage.getItem('nodehub-language') === 'pt-BR' ? text.pt : text.en;
-  const esc = v => typeof escapeHTML === 'function' ? escapeHTML(v) : String(v ?? '').replace(/[&<>\"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#039;'}[c]));
 
   async function submitNode(e) {
     e.preventDefault();
@@ -42,11 +41,7 @@
       }
       const { data: insertedNode, error } = await db.from('nodes').insert({ user_id:currentUser.id, name, description, city, country, upland_location:neighborhood, continent, logo_url, discord_url:discord, twitter_url:twitter, telegram_url:telegram, status:'pending' }).select('id').single();
       if (error) throw error;
-      try {
-        await db.functions.invoke('node-registration-notify', { body: { node_id: insertedNode.id } });
-      } catch (notifyError) {
-        console.warn('Node registration notification failed:', notifyError);
-      }
+      try { await db.functions.invoke('node-registration-notify', { body: { node_id: insertedNode.id } }); } catch (notifyError) { console.warn('Node registration notification failed:', notifyError); }
       msg.textContent = l.success; form.reset();
     } catch (err) { console.error('Node submission:', err); msg.textContent = err?.message || l.error; }
     finally { button.disabled = false; button.textContent = l.submit; }
@@ -73,8 +68,9 @@
       return;
     }
 
-    section.innerHTML = `<div class="container" style="max-width:980px;margin:0 auto"><div class="section-heading"><span class="eyebrow">${l.eyebrow}</span><h1>${l.title}</h1><p>${l.intro}</p></div><div id="upland-account-card" class="auth-card" style="max-width:900px;margin:0 auto 24px"><span class="eyebrow">${l.upland}</span><h2 style="margin-top:8px">Connect Upland Account</h2><p>Loading Upland connection...</p></div><div class="auth-card" style="max-width:900px;margin:0 auto"><span class="eyebrow">${l.registerTitle}</span><h2 style="margin-top:8px">${l.register}</h2><p>${l.registerIntro}</p><a class="button button-primary" href="#register" style="margin-top:8px">${l.register}</a></div></div>`;
+    section.innerHTML = `<div class="container" style="max-width:980px;margin:0 auto"><div class="section-heading"><span class="eyebrow">${l.eyebrow}</span><h1>${l.title}</h1><p>${l.intro}</p></div><div id="upland-account-card" class="auth-card" style="max-width:900px;margin:0 auto 24px"><span class="eyebrow">${l.upland}</span><h2 style="margin-top:8px">Connect Upland Account</h2><p>Loading Upland connection...</p></div><div class="auth-card" style="max-width:900px;margin:0 auto"><span class="eyebrow">${l.registerTitle}</span><h2 style="margin-top:8px">${l.register}</h2><p>${l.registerIntro}</p><a class="button button-primary" href="#register" style="margin-top:8px">${l.register}</a></div><div style="max-width:900px;margin:20px auto 0;display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap"><a class="button button-secondary" href="#home">${l.backHome}</a><button class="button button-secondary" type="button" id="user-dashboard-signout-main">${l.signout}</button></div></div>`;
 
+    section.querySelector('#user-dashboard-signout-main').addEventListener('click', () => signOut());
     if (typeof window.__nodehubUplandMount === 'function') window.__nodehubUplandMount();
     section.scrollIntoView({ behavior:'smooth', block:'start' });
   }

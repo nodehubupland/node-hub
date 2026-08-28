@@ -1,4 +1,4 @@
-name: Restore user dashboard loader
+name: Keep current user dashboard loader
 
 on:
   push:
@@ -19,13 +19,11 @@ jobs:
           from pathlib import Path
           p = Path('index.html')
           s = p.read_text(encoding='utf-8')
-          old = '<script src="user-dashboard.js?v=20260824-v1"></script>'
-          new = '<script src="user-dashboard.js?v=20260825-v2"></script>'
-          if old in s:
-              s = s.replace(old, new, 1)
-          elif new not in s:
+          import re
+          s, count = re.subn(r'<script src="user-dashboard\.js\?v=[^"]+"></script>', '<script src="user-dashboard.js?v=20260828-v5"></script>', s, count=1)
+          if count == 0:
               marker = '<script src="app.js?v=20260824-v4"></script>'
-              loader = marker + new
+              loader = marker + '<script src="user-dashboard.js?v=20260828-v5"></script>'
               if marker not in s:
                   raise SystemExit('app.js script marker not found')
               s = s.replace(marker, loader, 1)
@@ -36,5 +34,5 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add index.html
-          git diff --cached --quiet || git commit -m 'Use current V1 user dashboard loader'
+          git diff --cached --quiet || git commit -m 'Use refreshed user dashboard loader'
           git push

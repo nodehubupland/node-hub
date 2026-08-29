@@ -3,6 +3,7 @@ const { SlashCommandBuilder, REST, Routes, EmbedBuilder } = require('discord.js'
 const CLIENT_ID = String(process.env.DISCORD_CLIENT_ID || '').trim();
 const DISCORD_TOKEN = String(process.env.DISCORD_TOKEN || '').trim();
 const GUILD_ID = String(process.env.DISCORD_GUILD_ID || '').trim();
+const DAILY_RANKING_CHANNEL_ID = String(process.env.DAILY_RANKING_CHANNEL_ID || '').trim();
 const TREASURE_FUNCTION = String(process.env.UPLAND_TREASURE_FUNCTION_URL || 'https://ynqtzyzxspoxssjrjeve.supabase.co/functions/v1/upland-treasure').trim();
 const ANALYTICS_FUNCTION = String(process.env.UPLAND_TREASURE_ANALYTICS_URL || 'https://ynqtzyzxspoxssjrjeve.supabase.co/functions/v1/upland-treasure-analytics').trim();
 const TREASURE_KEY = String(process.env.UPLAND_TREASURE_KEY || '').trim();
@@ -42,7 +43,7 @@ async function fetchAnalytics(period = '24h') {
   const headers = { Accept: 'application/json' };
   if (TREASURE_KEY) headers['x-node-hub-key'] = TREASURE_KEY;
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 45000);
+  const timer = setTimeout(() => controller.abort(), 60000);
   try {
     const response = await fetch(url, { headers, signal: controller.signal });
     const text = await response.text();
@@ -68,11 +69,54 @@ function analyticsEmbed(body) {
   const costLine = t.costsAvailable ? `**Costs:** ${Number(t.costs || 0).toLocaleString('en-US')} UPX\n**Net profit:** ${Number(t.netProfit || 0).toLocaleString('en-US')} UPX` : '**Costs:** not available from the current indexed response';
   const topCities = (body.cities || []).slice(0, 10).map((c, i) => `**${i + 1}.** ${c.city} · ${c.chests} chests · ${Number(c.totalUpx || 0).toLocaleString('en-US')} UPX`).join('\n');
   const breakdown = (body.chestBreakdown || []).slice(0, 10).map((x) => `${x.reward}: ${x.count}`).join(' · ');
+  return new EmbedBuilder().setTitle(`TREASURE HUNT ANALYTICS · ${period.toUpperCase()}`).setDescription(`**UPX found:** ${Number(t.totalUpx || 0).toLocaleString('en-US')}\n**Sparklet found:** ${Number(t.sparkletFound || 0).toLocaleString('en-US')}\n**Chests:** ${Number(t.totalChests || 0).toLocaleString('en-US')}\n**Active hunters:** ${Number(t.activeHunters || 0).toLocaleString('en-US')}\n**Active cities:** ${Number(t.activeCities || 0).toLocaleString('en-US')}\n\n${costLine}\n\n**Chest breakdown**\n${breakdown || 'No UPX chest breakdown available'}\n\n**Top cities by chests**\n${topCities || 'No city data available'}`.slice(0, 4096)).setFooter({ text: 'Node Hub · Upland Developers API' }).setTimestamp();
+}
+
+function dailyRankingEmbed(body) {
+  const date = new Date().toISOString().slice(0, 10);
+  const ranking = Array.isArray(body.playerRanking) ? body.playerRanking.slice(0, 30) : [];
+  const lines = ranking.map((player, index) => {
+    const treasureWord = Number(player.treasures) === 1 ? 'treasure' : 'treasures';
+    return `${index + 1}. **${player.userName}**\n— ${Number(player.totalUpx || 0).toLocaleString('en-US')} UPX · ${Number(player.treasures || 0)} ${treasureWord}`;
+  });
+  const description = lines.length ? lines.join('\n\n') : 'No Treasure Hunt results available for the last 24 hours.';
   return new EmbedBuilder()
-    .setTitle(`TREASURE HUNT ANALYTICS · ${period.toUpperCase()}`)
-    .setDescription(`**UPX found:** ${Number(t.totalUpx || 0).toLocaleString('en-US')}\n**Sparklet found:** ${Number(t.sparkletFound || 0).toLocaleString('en-US')}\n**Chests:** ${Number(t.totalChests || 0).toLocaleString('en-US')}\n**Active hunters:** ${Number(t.activeHunters || 0).toLocaleString('en-US')}\n**Active cities:** ${Number(t.activeCities || 0).toLocaleString('en-US')}\n\n${costLine}\n\n**Chest breakdown**\n${breakdown || 'No UPX chest breakdown available'}\n\n**Top cities by chests**\n${topCities || 'No city data available'}`.slice(0, 4096))
-    .setFooter({ text: 'Node Hub · Upland Developers API' })
+    .setTitle(`DAILY TREASURE RANKING · ${date}`)
+    .setDescription(description.slice(0, 4096))
+    .setFooter({ text: `NODEHUB_DAILY_RANKING:${date}` })
     .setTimestamp();
+}
+
+async function updateDailyRanking(client) {
+  if (!DAILY_RANKING_CHANNEL_ID) {
+    console.warn('DAILY_RANKING_CHANNEL_ID is not configured; hourly ranking is disabled.');
+    return;
+  }
+  try {
+    const channel = await client.channels.fetch(DAILY_RANKING_CHANNEL_ID);
+    if (!channel || !channel.isTextBased()) throw new Error('DAILY_RANKING_CHANNEL_NOT_FOUND_OR_NOT_TEXT');
+    const body = await fetchAnalytics('24h');
+    const messageId = String(process.env.DAILY_RANKING_MESSAGE_ID || '').trim();
+    const message = messageId ? await channel.messages.fetch(messageId).catch(() => null) : null;
+    const embed = dailyRankingEmbed(body);
+    if (message) {
+      await message.edit({ content: '', embeds: [embed] });
+      console.log('DAILY_RANKING_UPDATED', message.id);
+    } else {
+      const sent = await channel.send({ embeds: [embed] });
+      console.log('DAILY_RANKING_CREATED', sent.id);
+      console.log(`Set DAILY_RANKING_MESSAGE_ID=${sent.id} to keep editing this same message.`);
+    }
+  } catch (error) {
+    console.error('DAILY_RANKING_UPDATE_ERROR:', error.message);
+  }
+}
+
+async function startDailyRanking(client) {
+  if (!DAILY_RANKING_CHANNEL_ID) return;
+  const run = () => updateDailyRanking(client);
+  await run();
+  setInterval(run, 60 * 60 * 1000);
 }
 
 async function register() {
@@ -88,6 +132,7 @@ async function register() {
 
 async function setupUplandData(client) {
   await register().catch((error) => console.error('UPLAND_COMMAND_REGISTER_ERROR:', error));
+  client.once('ready', () => startDailyRanking(client).catch((error) => console.error('DAILY_RANKING_START_ERROR:', error)));
   client.on('interactionCreate', async (interaction) => {
     if (!interaction.isChatInputCommand()) return;
     if (interaction.commandName === 'treasure') {

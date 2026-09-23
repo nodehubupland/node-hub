@@ -57,8 +57,8 @@ alter table public.economy_ledger_entries enable row level security;
 alter table public.economy_treasury_balances enable row level security;
 
 -- Owner/admin role is stored server-controlled in profiles.role. No client has write access to finance records.
-create policy "economy owner reads configuration" on public.economy_feature_flags for select to authenticated
- using (exists (select 1 from public.profiles p where p.id = (select auth.uid()) and p.role in ('owner','admin')));
+create policy "economy reads enabled configuration" on public.economy_feature_flags for select to authenticated
+ using (enabled or exists (select 1 from public.profiles p where p.id = (select auth.uid()) and p.role in ('owner','admin')));
 create policy "economy owner reads all accounts" on public.economy_player_accounts for select to authenticated
  using (exists (select 1 from public.profiles p where p.id = (select auth.uid()) and p.role in ('owner','admin')));
 create policy "economy user reads own account" on public.economy_player_accounts for select to authenticated

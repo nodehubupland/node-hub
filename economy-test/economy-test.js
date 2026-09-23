@@ -19,13 +19,13 @@
     state.isOwner = ["owner", "admin"].includes(profile?.role);
     state.config = config || state.config;
     state.enabled = Boolean(config?.enabled);
-    if (!state.isOwner || !state.enabled) {
-      $("economy-access-message").textContent = state.isOwner ? "Economy Test is disabled by its database feature flag." : "This private test area is restricted.";
+    if (!state.enabled) {
+      $("economy-access-message").textContent = "Economy Test is disabled by its database feature flag.";
       return null;
     }
     $("economy-access-message").textContent = "Sandbox feature flag enabled. No real UPX transfer can be made.";
     $("economy-app").hidden = false;
-    $("economy-admin-panel").hidden = false;
+    $("economy-admin-panel").hidden = !state.isOwner;
     return current;
   }
   function quote() {

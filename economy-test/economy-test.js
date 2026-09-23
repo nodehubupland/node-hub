@@ -49,12 +49,20 @@
     setText("processing-balance", fmt(account?.processing_upx));
     rows(transactions);
     if (state.isOwner) {
-      const { data: treasury } = await window.db.from("economy_treasury_balances").select("bucket,amount_upx");
+      const [{ data: treasury }, { data: players }, { data: operations }] = await Promise.all([
+        window.db.from("economy_treasury_balances").select("bucket,amount_upx"),
+        window.db.from("economy_player_accounts").select("user_id,available_upx,processing_upx").order("updated_at", { ascending: false }).limit(50),
+        window.db.from("economy_transactions").select("user_id,requested_upx,status,created_at").order("created_at", { ascending: false }).limit(100)
+      ]);
       const values = Object.fromEntries((treasury || []).map((x) => [x.bucket, x.amount_upx]));
       setText("admin-player-liabilities", fmt(values.player_liabilities));
       setText("admin-in-transit", fmt(values.in_transit));
       setText("admin-nodehub-fees", fmt(values.node_hub_fees));
       setText("admin-treasury-cash", fmt(values.node_hub_cash));
+      setText("admin-upland-rate", `${state.config.upland_fee_bps || 0} bps`);
+      setText("admin-nodehub-rate", `${state.config.node_hub_fee_bps || 0} bps`);
+      $("admin-players-body").innerHTML = (players?.length ? players.map((p) => `<tr><td>${p.user_id}</td><td>${fmt(p.available_upx)}</td><td>${fmt(p.processing_upx)}</td></tr>`).join("") : '<tr><td colspan="3">No player accounts yet.</td></tr>');
+      $("admin-operations-body").innerHTML = (operations?.length ? operations.map((o) => `<tr><td>${new Date(o.created_at).toLocaleString()}</td><td>${o.user_id}</td><td>${fmt(o.requested_upx)}</td><td><span class="status-label ${o.status}">${o.status}</span></td></tr>`).join("") : '<tr><td colspan="4">No operations yet.</td></tr>');
     }
   }
   async function init() {

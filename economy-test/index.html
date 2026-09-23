@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Node Hub Economy Test</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="economy-test.css">
+</head>
+<body class="economy-page">
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="../index.html#home" class="logo"><span class="logo-dot">●</span> NODE HUB</a>
+      <nav class="main-nav"><a href="../index.html#dashboard">Back to dashboard</a></nav>
+    </div>
+  </header>
+  <main class="section">
+    <div class="container economy-shell">
+      <div class="economy-heading">
+        <span class="eyebrow">PRIVATE / EXPERIMENTAL</span>
+        <h1>Economy Test</h1>
+        <p id="economy-access-message">Checking protected test access…</p>
+      </div>
+      <section id="economy-app" hidden>
+        <div class="economy-grid">
+          <article class="economy-card balance-card">
+            <span class="eyebrow">PLAYER BALANCE</span>
+            <strong id="available-balance">0 UPX</strong>
+            <small>Confirmed, internal test balance</small>
+          </article>
+          <article class="economy-card">
+            <span class="eyebrow">IN PROCESSING</span>
+            <strong id="processing-balance">0 UPX</strong>
+            <small>Never spendable until confirmed</small>
+          </article>
+          <article class="economy-card">
+            <span class="eyebrow">MODE</span>
+            <strong>Sandbox only</strong>
+            <small>No UPX transfer is initiated from this page</small>
+          </article>
+        </div>
+        <div class="economy-two-column">
+          <section class="economy-panel">
+            <span class="eyebrow">DEPOSIT UPX</span>
+            <h2>Preview a deposit</h2>
+            <p>Amounts below are an estimate only. Confirmation requires the future approved Upland escrow flow.</p>
+            <label for="deposit-amount">UPX to credit</label>
+            <input id="deposit-amount" type="number" min="1" step="1" inputmode="numeric" value="20000">
+            <div class="fee-list">
+              <div><span>UPX requested</span><strong id="requested-upx">20,000 UPX</strong></div>
+              <div><span>Upland fee</span><strong id="upland-fee">0 UPX</strong></div>
+              <div><span>Node Hub fee</span><strong id="nodehub-fee">0 UPX</strong></div>
+              <div class="fee-total"><span>Total to debit</span><strong id="total-debit">20,000 UPX</strong></div>
+            </div>
+            <button id="deposit-button" class="button button-primary" type="button" disabled>Deposit flow unavailable</button>
+            <p class="test-note">The feature flag is off by default. This screen cannot move real UPX.</p>
+          </section>
+          <section id="economy-admin-panel" class="economy-panel" hidden>
+            <span class="eyebrow">OWNER TREASURY</span>
+            <h2>Private financial overview</h2>
+            <div class="treasury-grid">
+              <div><span>Player liabilities</span><strong id="admin-player-liabilities">0 UPX</strong></div>
+              <div><span>In transit</span><strong id="admin-in-transit">0 UPX</strong></div>
+              <div><span>Node Hub fees</span><strong id="admin-nodehub-fees">0 UPX</strong></div>
+              <div><span>Node Hub cash</span><strong id="admin-treasury-cash">0 UPX</strong></div>
+            </div>
+            <p class="test-note">Visible only to the database owner role; enforced by RLS.</p>
+          </section>
+        </div>
+        <section class="economy-panel">
+          <div class="history-heading"><div><span class="eyebrow">LEDGER</span><h2>Transaction history</h2></div><span class="status-legend"><i class="status pending"></i> pending <i class="status confirmed"></i> confirmed <i class="status failed"></i> failed</span></div>
+          <div class="table-wrap"><table><thead><tr><th>When</th><th>Type</th><th>Requested</th><th>Fees</th><th>Status</th></tr></thead><tbody id="transactions-body"><tr><td colspan="5">No transactions yet.</td></tr></tbody></table></div>
+        </section>
+      </section>
+    </div>
+  </main>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../app.js"></script>
+  <script src="economy-test.js"></script>
+</body>
+</html>
